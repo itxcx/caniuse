@@ -1,0 +1,8 @@
+<view class="title"><text>介绍说明</text></view>
+<view class="intro">
+	<text>所有数据信息来自 <text>https://github.com/Fyrd/caniuse</text>，该小程序主要的是为了便于在微信上与同行分享 CSS 相关属性的兼容性而使用。该 json 数据使用的是 <text>CC BY 4.0 license</text>，小程序中并未对数据所任何改动，而是直接引用。</text>
+	<text>该 json 文件虽然有 <text>1.5MB</text> 左右，经过 github 服务器的 gzip 压缩后，数据通信是 <text>187K</text> 左右。</text>
+	<text>Can I use 简化版只是将数据进行了简单的重组展现，如要获得更好的体验效果以及更全面的兼容信息，还请直接访问 <text>https://caniuse.com</text> 网站。</text>
+	<text>小程序作者： <text>林小志</text></text>
+	<text>个人公众号： <text>闲谈 CSS 那些事儿</text>（<text>talk-css</text>）</text>
+</view>
