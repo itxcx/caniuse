@@ -1,8 +1,7 @@
 var app = getApp()
-// var nick = ""
-// var pageTitle = ""
-// var app.queryKey = "flex"
 var searchKey = ""
+var loadMore = ""
+var refreshAgain = 0;
 Page({
   onLoad: function (res) {
     console.log(res.queryKey)
@@ -17,7 +16,7 @@ Page({
     // res.queryKey = "flex" // 测试用的关键词
     // console.log("shareKeyUrl:" + res.queryKey)
     if(res.queryKey == "" || res.queryKey == undefined || res.queryKey == null){
-      searchKey = "xhr2";
+      searchKey = "colasdfadf";
     }else{
       searchKey = res.queryKey
     }
@@ -35,6 +34,7 @@ Page({
     // nick = userInfo.nickName;
     wx.showLoading({
       title: '数据加载中……',
+      mask: true
     })
     // })
 
@@ -58,19 +58,12 @@ Page({
         var formattedDate = date.getFullYear() + "/" + ('0' + (date.getMonth() + 1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) + " " + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
 
         app.post = res.data.data
-        // console.log(app.post)
 
         that.setData({
           data: {
             message: "数据更新时间：" + formattedDate
           },
           showTitle: searchKey,
-          // inputValue: searchKey,
-          // inputBtn:{
-          //   focus: true,
-          //   disabled: false
-          // },
-          // c3Result: {},
           css2: [
             'background-color',
             'background-image',
@@ -130,6 +123,9 @@ Page({
 
     var c3temp = 0;
     var c3B = 0;
+    var loopNum = 0;
+
+    refreshAgain += 4;
 
     for(let p in app.post) {
       if(p.toLowerCase().match(searchKey) || app.post[p].title.toLowerCase().match(searchKey) || app.post[p].keywords.toLowerCase().match(searchKey)|| app.post[p].description.toLowerCase().match(searchKey)) {
@@ -1095,7 +1091,7 @@ Page({
 
         that.setData({
           ['c3Result['+c3temp+']']: {
-            c3T: app.post[p].title,
+            c3T: c3temp + "、" + app.post[p].title,
             c3D: app.post[p].description,
             c3K: app.post[p].keywords,
             c3N: app.post[p].notes,
@@ -1155,13 +1151,37 @@ Page({
             csBrowser_and_qqY: css3_sR[50],
             csBrowser_baiduN: css3_sR[51],
             csBrowser_baiduA: css3_sR[52],
-            csBrowser_baiduY: css3_sR[53]
+            csBrowser_baiduY: css3_sR[53],
+            loadMore: "",
+            loadMoreClass: ""
           }
-        }),
+        })
 
-        c3temp++;
+            if(loopNum >= refreshAgain) {
+              wx.showToast({
+                title: '加载前 ' + c3temp + ' 条数据',
+                icon: 'loading',
+                mask: true,
+                duration: 3000
+              }),
+              that.setData({
+                loadMore: "getMoreList",
+                loadMoreClass: "moreListCollapse"
+              }),
+              c3temp = refreshAgain;
+            }
+
+            c3temp++;
+            loopNum++;
       }
     }
+
+        if(c3temp == 0){
+          that.setData({
+            findTips404: "findTips404",
+            findTips404Text: "Ta 分享的属性是："
+          })
+        }
       }
     })
   // },

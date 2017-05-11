@@ -3,6 +3,8 @@ var app = getApp()
 var path = ""
 var findTips404 = ""
 var findTips404Text = ""
+var loadMore = ""
+var refreshAgain = 0;
 Page({
   onShareAppMessage: function () {
     return {
@@ -46,6 +48,7 @@ Page({
       // nick = userInfo.nickName;
       wx.showLoading({
         title: '数据加载中……',
+        mask: true
       })
     // })
 
@@ -87,6 +90,7 @@ Page({
 
 
   beginSearch: function(e) {
+    refreshAgain = 0;
     var css3_s = [];
     e.detail.value = e.detail.value.replace(/(^\s*)|(\s*$)/ig, "")
     this.setData({
@@ -138,7 +142,7 @@ Page({
         disabledBtn: false
       },
       findTips404: "",
-      findTips404Text: ""
+      findTips404Text: "",
     })
   },
 
@@ -147,35 +151,27 @@ Page({
     var css3_s = [];
     var css3_sR = [];
 
+    refreshAgain += 4;
+
     app.pageTitle = this.data.inputValue;
       
-    // console.log(this.data.css2)
     if(this.data.css2 == undefined) {
-      // console.log("别按那么快！")
       this.setData({
         findTips404: "findTips404",
         findTips404Text: "你确定你输入了内容"
       })
     }else{
       if(this.data.inputValue == "" || this.data.inputValue.length == 0) {
-        // console.log("空的，没内容！")
         this.setData({
           findTips404: "findTips404",
           findTips404Text: "是不是忘了输入什么了"
         })
       }else{
         for(var i=0;i<=this.data.css2.length-1;i++){
-          // console.log(this.data.css2[i].match(this.data.inputValue))
-          // console.log(i)
           if(this.data.css2[i].toLowerCase().match(this.data.inputValue.toLowerCase())){
-            // this.data.className = "show";
-            // console.log(this.data.css2[i])
             this.data.css2[i] = this.data.css2[i]
-            // app.flag = "true"
-            // t++
           }else{
             this.data.css2[i] = ""
-            // app.flag = "false"
           }
 
           this.setData({
@@ -186,38 +182,9 @@ Page({
         var c3temp = 0;
         var c3B = 0;
         var loopNum = 0;
-        // var find404 = 0;
-
-        // console.log(app.post)
 
         for(let p in app.post) {
-          // if(app.post[p].description.toLowerCase().match(this.data.inputValue.toLowerCase())){
-          //   console.log(app.post[p].description.toLowerCase().match(this.data.inputValue.toLowerCase()))
-          // }
-          // console.log(app.post[p].title.toLowerCase())
-          // console.log(this.data.inputValue.toLowerCase())
           if(p.toLowerCase().match(this.data.inputValue.toLowerCase()) || app.post[p].title.toLowerCase().match(this.data.inputValue.toLowerCase()) || app.post[p].keywords.toLowerCase().match(this.data.inputValue.toLowerCase())|| app.post[p].description.toLowerCase().match(this.data.inputValue.toLowerCase())) {
-            // find404 = 0;
-            // console.log(c3temp)
-            // console.log("title: " + app.post[p].title + "      keywords: " + app.post[p].keywords)
-            // console.log(app.post[p].stats)
-            // console.log("title: " + app.post[p].title);
-            // c3Title[c3temp] = app.post[p].title;
-
-            // console.log("description: " + app.post[p].description);
-            // console.log("keywords: " + app.post[p].keywords);
-            // console.log("notes: " + app.post[p].notes);
-            // console.log(app.post[p].stats);
-
-            // for(let q in app.post[p].stats){
-            //   css3_s[q] = app.post[p].stats[q]
-            //   console.log(q)
-            // // console.log("usage_perc_a: " + app.post[p].usage_perc_a);
-            // // console.log("usage_perc_y: " + app.post[p].usage_perc_y);
-            //   // console.log("------------------")
-            //   // console.log(css3_s[c3B++])
-            //   c3B++;
-            // }
 
             var temp_n = 0;
             var temp_a = 0;
@@ -230,19 +197,13 @@ Page({
             for(let a in app.post[p].stats.ie){
               if(app.post[p].stats.ie[a].match(/n|不支持/ig)){
                 app.post[p].stats.ie[a] = "版本：" + a + " 及以下【不支持】"
-                // css3_s[0] = a;
                 css3_s[0] = Number.parseFloat(a.replace(/(\d.*)[-]/ig,0));
-                // console.log(css3_s[0])
               }else if(app.post[p].stats.ie[a].match(/a|p|部分支持/ig)){
                 app.post[p].stats.ie[a] = "版本：" + a + " 及以下【部分支持，可能需要浏览器前缀】"
-                // css3_s[1] = a;
                 css3_s[1] = Number.parseFloat(a.replace(/[-](\d.*)/ig,".0"));
-                // console.log(app.post[p].stats.ie[a])
               }else if(app.post[p].stats.ie[a].match(/y|已支持/ig)){
                 app.post[p].stats.ie[a] = "版本：" + a + " 【已支持】"
-                // css3_s[2] = a;
                 css3_s[2] = Number.parseFloat(a.replace(/[-](\d.*)/ig,".0"));
-                // console.log(css3_s[2])
               }
 
               if(temp_n > Number.parseFloat(css3_s[0]) && temp_n != 0) {
@@ -286,15 +247,12 @@ Page({
             for(let a1 in app.post[p].stats.edge){
               if(app.post[p].stats.edge[a1].match(/n|不支持/ig)){
                 app.post[p].stats.edge[a1] = "版本：" + a1 + " 及以下【不支持】"
-                // css3_s[3] = a1;
                 css3_s[3] = Number.parseFloat(a1.replace(/(\d.*)[-]/ig,0));
               }else if(app.post[p].stats.edge[a1].match(/a|p|部分支持/ig)){
                 app.post[p].stats.edge[a1] = "版本：" + a1 + " 及以下【部分支持，可能需要浏览器前缀】"
-                // css3_s[4] = a1;
                 css3_s[4] = Number.parseFloat(a1.replace(/[-](\d.*)/ig,".0"));
               }else if(app.post[p].stats.edge[a1].match(/y|已支持/ig)){
                 app.post[p].stats.edge[a1] = "版本：" + a1 + " 【已支持】"
-                // css3_s[5] = a1;
                 css3_s[5] = Number.parseFloat(a1.replace(/[-](\d.*)/ig,".0"));
               }
 
@@ -339,16 +297,12 @@ Page({
             for(let a2 in app.post[p].stats.firefox){
               if(app.post[p].stats.firefox[a2].match(/n|不支持/ig)){
                 app.post[p].stats.firefox[a2] = "版本：" + a2 + " 及以下【不支持】"
-                // css3_s[6] = a2;
                 css3_s[6] = Number.parseFloat(a2.replace(/(\d.*)[-]/ig,0));
               }else if(app.post[p].stats.firefox[a2].match(/a|p|部分支持/ig)){
                 app.post[p].stats.firefox[a2] = "版本：" + a2 + " 及以下【部分支持，可能需要浏览器前缀】"
-                // css3_s[7] = a2;
-               // console.log(a2)
                 css3_s[7] = Number.parseFloat(a2.replace(/[-](\d.*)/ig,".0"));
               }else if(app.post[p].stats.firefox[a2].match(/y|已支持/ig)){
                 app.post[p].stats.firefox[a2] = "版本：" + a2 + " 【已支持】"
-                // css3_s[8] = a2;
                 css3_s[8] = Number.parseFloat(a2.replace(/[-](\d.*)/ig,".0"));
               }
 
@@ -393,15 +347,12 @@ Page({
             for(let a3 in app.post[p].stats.chrome){
               if(app.post[p].stats.chrome[a3].match(/n|不支持/ig)){
                 app.post[p].stats.chrome[a3] = "版本：" + a3 + " 及以下【不支持】"
-                // css3_s[9] = a3;
                 css3_s[9] = Number.parseFloat(a3.replace(/(\d.*)[-]/ig,0));
               }else if(app.post[p].stats.chrome[a3].match(/a|p|部分支持/ig)){
                 app.post[p].stats.chrome[a3] = "版本：" + a3 + " 及以下【部分支持，可能需要浏览器前缀】"
-                // css3_s[10] = a3;
                 css3_s[10] = Number.parseFloat(a3.replace(/[-](\d.*)/ig,".0"));
               }else if(app.post[p].stats.chrome[a3].match(/y|已支持/ig)){
                 app.post[p].stats.chrome[a3] = "版本：" + a3 + " 【已支持】"
-                // css3_s[11] = a3;
                 css3_s[11] = Number.parseFloat(a3.replace(/[-](\d.*)/ig,".0"));
               }
 
@@ -446,13 +397,11 @@ Page({
             for(let a4 in app.post[p].stats.safari){
               if(app.post[p].stats.safari[a4].match(/n|不支持/ig)){
                 app.post[p].stats.safari[a4] = "版本：" + a4 + " 及以下【不支持】"
-                // css3_s[12] = a4;
                 css3_s[12] = Number.parseFloat(a4.replace(/(\d.*)[-]/ig,0));
                 Number.parseFloat(a4)?css3_s[12] = a4:css3_s[12] = 1
               }else if(app.post[p].stats.safari[a4].match(/a|p|部分支持/ig)){
                 app.post[p].stats.safari[a4] = "版本：" + a4 + " 及以下【部分支持，可能需要浏览器前缀】"
                 Number.parseFloat(a4)?css3_s[13] = a4:css3_s[13] = 1
-                // css3_s[13] = a4;
                 css3_s[13] = Number.parseFloat(a4.replace(/[-](\d.*)/ig,".0"));
               }else if(app.post[p].stats.safari[a4].match(/y|已支持/ig)){
                 app.post[p].stats.safari[a4] = "版本：" + a4 + " 【已支持】"
@@ -613,7 +562,6 @@ Page({
                 }else if(app.post[p].stats.op_mini[a7].match(/y|已支持/ig)){
                   app.post[p].stats.op_mini[a7] = "版本：" + a7 + " 【已支持】"
                   css3_sR[23] = css3_s[23] = a7;
-                  // console.log(css3_s[23])
                 }
               }else{
                 if(app.post[p].stats.op_mini[a7].match(/n|不支持/ig)){
@@ -1180,7 +1128,7 @@ Page({
 
             this.setData({
               ['c3Result['+c3temp+']']: {
-                c3T: app.post[p].title,
+                c3T: c3temp + "、" + app.post[p].title,
                 c3D: app.post[p].description,
                 c3K: app.post[p].keywords,
                 c3N: app.post[p].notes,
@@ -1241,10 +1189,27 @@ Page({
                 csBrowser_baiduN: css3_sR[51],
                 csBrowser_baiduA: css3_sR[52],
                 csBrowser_baiduY: css3_sR[53]
-              }
-            }),
+              },
+              loadMore: "",
+              loadMoreClass: ""
+            })
+
+            if(loopNum >= refreshAgain) {
+              wx.showToast({
+                title: '加载前 ' + c3temp + ' 条数据',
+                icon: 'loading',
+                mask: true,
+                duration: 3000
+              }),
+              this.setData({
+                loadMore: "getMoreList",
+                loadMoreClass: "moreListCollapse"
+              }),
+              c3temp = refreshAgain;
+            }
 
             c3temp++;
+            loopNum++;
           }
           // else{
           //   find404++;
@@ -1252,8 +1217,6 @@ Page({
         }
 
         if(c3temp == 0){
-          // console.log(c3temp)
-          // console.log("找不到你搜的东西！")
           this.setData({
             findTips404: "findTips404",
             findTips404Text: "你确定要输入的这个属性是："

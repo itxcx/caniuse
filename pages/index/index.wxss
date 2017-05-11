@@ -1,3 +1,6 @@
+page {
+	padding-bottom: 30rpx;
+}
 .updata_time {
 	height: 42rpx;
 	overflow: hidden;
@@ -53,9 +56,8 @@
 }
 .caniuse_list {
 	overflow: hidden;
-	margin-bottom: 30rpx;
+	margin-bottom: 20rpx;
 }
-
 .item_box {
 	overflow: hidden;
 	margin: 10rpx 20rpx;
@@ -195,4 +197,17 @@
 	width: 420rpx;
 	height: 420rpx;
 	margin-left: 200rpx;
+}
+.loadMoreBox {
+	display: none;
+}
+.getMoreList .loadMoreBox {
+	display: block;
+	padding: 10rpx;
+	margin:0 20rpx;
+	text-align: center;
+	font-size: 32rpx;
+	border-radius: 8rpx;
+	color: #fff;
+	background-color: #DB5600;
 }

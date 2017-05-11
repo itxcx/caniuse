@@ -159,5 +159,15 @@
 				</view>
 			</view>
 		</view>
+		<view class="{{ loadMore }}">
+			<navigator class="loadMoreBox"  url="/pages/index/index" open-type="switchTab">需要查看更多的 {{ showTitle }} 请到查询页</navigator>
+		</view>
+
+		<view class="tipsBox">
+			<view class="{{ findTips404 }}">
+				<text>{{ findTips404Text }} {{ showTitle }} ？找不到啊！</text>
+				<image src="/images/find-no.png" class="findTipsPic"></image>
+			</view>
+		</view>
   </form>
 </view>
