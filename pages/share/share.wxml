@@ -2,11 +2,11 @@
 <view class="container">
   <view class="updata_time">{{ data.message }}</view>
 
-	<navigator url="/pages/index/index" open-type="switchTab" class="goHome">回首页查其他属性</navigator>
+	<navigator url="/pages/index/index" open-type="switchTab" class="goHome">{{ showTitle }} 兼容信息，点这里查其他属性</navigator>
 
   <form bindsubmit="goHome">
 	  <view class="search_input">
-			<input type="text" confirm-type="search" value="{{ inputValue }}" bindfocus="bindconfirm" focus="{{ inputBtn.focus }}" />
+			<input type="text" confirm-type="search" value="{{ inputValue }}"/>
 	  </view>
 
 		<view class="supportList">

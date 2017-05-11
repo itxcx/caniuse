@@ -158,5 +158,12 @@
 				</view>
 			</view>
 		</view>
+
+		<view class="tipsBox">
+			<view class="{{ findTips404 }}">
+				<text>{{ findTips404Text }} {{ inputValue }} ？</text>
+				<image src="/images/find-no.png" class="findTipsPic"></image>
+			</view>
+		</view>
   </form>
 </view>
