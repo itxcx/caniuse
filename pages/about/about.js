@@ -43,6 +43,7 @@ Page({
       },
 
       success: function(res) {
+        wx.clearStorageSync()
 
         timestamp = res.data.updated;
         var date = new Date(timestamp * 1000);
@@ -54,7 +55,6 @@ Page({
 
         for(let r in app.post){
         	listItemNum++
-        	wx.removeStorageSync(r)
           wx.setStorageSync(r, app.post[r])
           wx.getStorageSync(r, app.post[r])
           console.log("数据加载 " + listItemNum + " 条")
