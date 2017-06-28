@@ -1,0 +1,3 @@
+<button bindtap="getJson" style="display: {{_getJsonBtnStatus}}">加载数据</button>
+<view>{{ _timeStamp }}</view>
+<view>{{ _userCancelUpdate }}</view>

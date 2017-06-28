@@ -1,8 +1,7 @@
 {
   "pages": [
-    "pages/index/index",
-    "pages/about/about",
-    "pages/share/share"
+    "pages/home/home",
+    "pages/about/about"
   ],
   "window":{
     "navigationBarBackgroundColor": "#3D3527",
