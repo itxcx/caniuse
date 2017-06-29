@@ -1,11 +1,9 @@
 var app = getApp()
-var attrLstArray = []
 
-// ✔︎ 数据写入data之后，考虑如何读取出来
 Page({
   onLoad: function (res) {
     var that = this
-    // 判断本地 storage 中是否存在时间戳
+    // ✔︎ 判断本地 storage 中是否存在时间戳
     // 如果有则直接读取 localStorage 内容
     // localStorage 没有时间戳则显示加载按钮提示加载 json 文件
     that.setData({
@@ -17,21 +15,99 @@ Page({
         title: '数据加载完毕',
         duration: 1000
       })
-      // console.log(wx.getStorageSync("jsonTotal")) // Json 数据总量
       wx.getStorageInfo({
         success: function(res) {
-          console.log(res)
-          console.log(res.keys)
-          // console.log(res.currentSize)
-          // console.log(res.limitSize)
-          console.log(res.keys.length)
-          for(let i = 0; i < res.keys.length - 2; i++){
+          let attrDetailArray = [],
+              attrNameArray = []
+          for(let i = 0, j = 0; i < res.keys.length - 2; i++){
             if(res.keys[i].match(/png/ig)){
-              console.log(res.keys[i])
-              console.log(wx.getStorageSync(res.keys[i]))
+              attrNameArray.push(res.keys[i])
+              attrDetailArray.push(wx.getStorageSync(res.keys[i]))
+
+              let browserTypeArray = [],
+                  browserVerArray = [],
+                  compatibility = []
+              for(let type in attrDetailArray[j].stats) {
+                let brwoserVerTemp = 0,
+                    BVT = 0,
+                    brwoserVerY = 0,
+                    brwoserVerN = 0,
+                    brwoserVerU = 0,
+                    brwoserVerA = 0
+                browserTypeArray.push(type) // 把浏览器类型写入到 AppData 中
+                for(let ver in attrDetailArray[j].stats[type]) {
+                  browserVerArray.push(ver) // 把所有浏览器的版本写入到 AppData 中
+                  var temp = attrDetailArray[j].stats[type]
+
+                  compatibility = attrDetailArray[j].stats[type][ver] // 兼容性列表
+                  if(compatibility.match(/y/ig)){
+                    console.log("全兼容")
+                    // 判断浏览器的版本，获取最高版本
+                    // if(ver.match(/\-/ig)){
+                    //   ver = ver.split(/\-/ig)[1]
+                    // }
+                    // if(brwoserVerY < parseFloat(Number(ver))) {
+                    //   brwoserVerY = ver
+                    // }else if(isNaN(Number(ver)) && ver == "all") {
+                    //   brwoserVerY = ver
+                    // }
+                    brwoserVerY = that.judgeVer(brwoserVerY,ver)
+                    // console.log(brwoserVerY)
+                    // console.log("***********")
+                  }else if(compatibility.match(/n/ig)) {
+                    console.log("一点都不兼容")
+                    // 判断浏览器的版本，获取最高版本
+                    // if(ver.match(/\-/ig)){
+                    //   ver = ver.split(/\-/ig)[1]
+                    // }
+                    // if(brwoserVerN < parseFloat(Number(ver))) {
+                    //   brwoserVerN = ver
+                    // }else if(isNaN(Number(ver)) && ver == "all") {
+                    //   brwoserVerN = ver
+                    // }
+                    brwoserVerN = that.judgeVer(brwoserVerN,ver)
+                  }else if(compatibility.match(/u/ig)) {
+                    console.log("是否支持还不知道")
+                    // 判断浏览器的版本，获取最高版本
+                    // if(ver.match(/\-/ig)){
+                    //   ver = ver.split(/\-/ig)[1]
+                    // }
+                    // if(brwoserVerU < parseFloat(Number(ver))) {
+                    //   brwoserVerU = ver
+                    // }else if(isNaN(Number(ver)) && ver == "all") {
+                    //   brwoserVerU = ver
+                    // }
+                    brwoserVerU = that.judgeVer(brwoserVerU,ver)
+                  }else if(compatibility.match(/a|p/ig)) {
+                    console.log("部分支持")
+                    // 判断浏览器的版本，获取最高版本
+                    // if(ver.match(/\-/ig)){
+                    //   ver = ver.split(/\-/ig)[1]
+                    // }
+                    // if(brwoserVerA < parseFloat(Number(ver))) {
+                    //   brwoserVerA = ver
+                    // }else if(isNaN(Number(ver)) && ver == "all") {
+                    //   brwoserVerA = ver
+                    // }
+                    brwoserVerA = that.judgeVer(brwoserVerA,ver)
+                  }
+                }
+                console.log(brwoserVerY) // 最高版本的浏览器
+                console.log(brwoserVerN) // 最高版本的浏览器
+                console.log(brwoserVerU) // 最高版本的浏览器
+                console.log(brwoserVerA) // 最高版本的浏览器
+                console.log("当前浏览器"+type+"版本判断结束")
+                attrNameArray.push(brwoserVerTemp)
+              }
+              attrNameArray.push(browserTypeArray)
+              // attrNameArray.push(browserVerArray)
+
               that.setData({
-                [res.keys[i]]: wx.getStorageSync(res.keys[i])
+                _attrShowList: attrNameArray,
+                attrDetail: attrDetailArray
               })
+
+              j++
             }
           }
         }
@@ -44,6 +120,23 @@ Page({
         _getJsonBtnStatus: "" // 加载按钮显示出来
       })
     }
+  },
+
+  judgeVer: function(brwoserVerTemp,version) {
+    // let brwoserVerTemp = 0
+    // 判断浏览器的版本，获取最高版本
+    // console.log(brwoserVerTemp)
+    // console.log(version)
+    if(version.match(/\-/ig)){
+      version = version.split(/\-/ig)[1]
+    }
+    if(brwoserVerTemp < parseFloat(Number(version))) {
+      brwoserVerTemp = version
+    }else if(isNaN(Number(version)) && version == "all") {
+      brwoserVerTemp = version
+    }
+    // console.log(brwoserVerTemp)
+    return brwoserVerTemp
   },
 
   // 通过点击加载按钮加载 json 文件
@@ -63,7 +156,6 @@ Page({
             content: '目前你所连接的是 ' + networkType + " 网络，并非 wifi 网络，该数据请求可能需要 200K 以上的流量请求，确定更新？",
             success: function(res) {
               if (res.confirm) {
-                console.log('用户点击确定')
                 that.setData({
                   _getJsonBtnStatus: "", // 加载按钮显示出来
                   _userCancelUpdate: ""
