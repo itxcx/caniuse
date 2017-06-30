@@ -19,93 +19,74 @@ Page({
         success: function(res) {
           let attrDetailArray = [],
               attrNameArray = []
+              // testArray = []
           for(let i = 0, j = 0; i < res.keys.length - 2; i++){
             if(res.keys[i].match(/png/ig)){
+              // console.log(res.keys[i])
               attrNameArray.push(res.keys[i])
               attrDetailArray.push(wx.getStorageSync(res.keys[i]))
 
+              attrNameArray.push([
+                attrDetailArray[j].title,
+                attrDetailArray[j].description,
+                attrDetailArray[j].spec,
+                attrDetailArray[j].usage_perc_y,
+                attrDetailArray[j].usage_perc_a,
+                attrDetailArray[j].notes
+                ])
+
               let browserTypeArray = [],
-                  browserVerArray = [],
+                  // browserVerArray = [],
                   compatibility = []
               for(let type in attrDetailArray[j].stats) {
-                let brwoserVerTemp = 0,
-                    BVT = 0,
-                    brwoserVerY = 0,
+                // console.log(attrDetailArray[j])
+                // console.log(attrDetailArray[j].title)
+                // console.log(attrDetailArray[j].description)
+                // console.log(attrDetailArray[j].spec)
+                // console.log(attrDetailArray[j].usage_perc_y)
+                // console.log(attrDetailArray[j].usage_perc_a)
+                // console.log(attrDetailArray[j].notes)
+                // browserTypeArray.push(type) // 把浏览器类型写入到 AppData 中,
+                  // testArray = []
+                let brwoserVerY = 0,
                     brwoserVerN = 0,
                     brwoserVerU = 0,
                     brwoserVerA = 0
-                browserTypeArray.push(type) // 把浏览器类型写入到 AppData 中
                 for(let ver in attrDetailArray[j].stats[type]) {
-                  browserVerArray.push(ver) // 把所有浏览器的版本写入到 AppData 中
+                  // browserVerArray.push(ver) // 把所有浏览器的版本写入到 AppData 中
                   var temp = attrDetailArray[j].stats[type]
 
                   compatibility = attrDetailArray[j].stats[type][ver] // 兼容性列表
                   if(compatibility.match(/y/ig)){
-                    console.log("全兼容")
-                    // 判断浏览器的版本，获取最高版本
-                    // if(ver.match(/\-/ig)){
-                    //   ver = ver.split(/\-/ig)[1]
-                    // }
-                    // if(brwoserVerY < parseFloat(Number(ver))) {
-                    //   brwoserVerY = ver
-                    // }else if(isNaN(Number(ver)) && ver == "all") {
-                    //   brwoserVerY = ver
-                    // }
                     brwoserVerY = that.judgeVer(brwoserVerY,ver)
-                    // console.log(brwoserVerY)
-                    // console.log("***********")
                   }else if(compatibility.match(/n/ig)) {
-                    console.log("一点都不兼容")
-                    // 判断浏览器的版本，获取最高版本
-                    // if(ver.match(/\-/ig)){
-                    //   ver = ver.split(/\-/ig)[1]
-                    // }
-                    // if(brwoserVerN < parseFloat(Number(ver))) {
-                    //   brwoserVerN = ver
-                    // }else if(isNaN(Number(ver)) && ver == "all") {
-                    //   brwoserVerN = ver
-                    // }
                     brwoserVerN = that.judgeVer(brwoserVerN,ver)
                   }else if(compatibility.match(/u/ig)) {
-                    console.log("是否支持还不知道")
-                    // 判断浏览器的版本，获取最高版本
-                    // if(ver.match(/\-/ig)){
-                    //   ver = ver.split(/\-/ig)[1]
-                    // }
-                    // if(brwoserVerU < parseFloat(Number(ver))) {
-                    //   brwoserVerU = ver
-                    // }else if(isNaN(Number(ver)) && ver == "all") {
-                    //   brwoserVerU = ver
-                    // }
                     brwoserVerU = that.judgeVer(brwoserVerU,ver)
                   }else if(compatibility.match(/a|p/ig)) {
-                    console.log("部分支持")
-                    // 判断浏览器的版本，获取最高版本
-                    // if(ver.match(/\-/ig)){
-                    //   ver = ver.split(/\-/ig)[1]
-                    // }
-                    // if(brwoserVerA < parseFloat(Number(ver))) {
-                    //   brwoserVerA = ver
-                    // }else if(isNaN(Number(ver)) && ver == "all") {
-                    //   brwoserVerA = ver
-                    // }
                     brwoserVerA = that.judgeVer(brwoserVerA,ver)
                   }
                 }
-                console.log(brwoserVerY) // 最高版本的浏览器
-                console.log(brwoserVerN) // 最高版本的浏览器
-                console.log(brwoserVerU) // 最高版本的浏览器
-                console.log(brwoserVerA) // 最高版本的浏览器
-                console.log("当前浏览器"+type+"版本判断结束")
-                attrNameArray.push(brwoserVerTemp)
+                // console.log("全兼容 " + brwoserVerY) // 全兼容 最高版本的浏览器
+                // console.log("一点都不兼容 " + brwoserVerN) // 不兼容 最高版本的浏览器
+                // console.log("是否支持还不知道 " + brwoserVerU) // 未知兼容 最高版本的浏览器
+                // console.log("部分支持 " + brwoserVerA) // 部分兼容 最高版本的浏览器
+                // console.log("当前浏览器 "+type+" 版本判断结束\n-----------------------------------------")
+                // attrNameArray.push(type,brwoserVerY,brwoserVerN,brwoserVerU,brwoserVerA)
+                browserTypeArray.push(type,[brwoserVerY,brwoserVerN,brwoserVerU,brwoserVerA])
+                // browserTypeArray.push(testArray)
               }
+
               attrNameArray.push(browserTypeArray)
+              that.setData({
+                attrNameArray
+              })
+              // console.log(attrNameArray)
               // attrNameArray.push(browserVerArray)
 
-              that.setData({
-                _attrShowList: attrNameArray,
-                attrDetail: attrDetailArray
-              })
+              // that.setData({
+              //   attrDetail: attrDetailArray
+              // })
 
               j++
             }
@@ -135,7 +116,6 @@ Page({
     }else if(isNaN(Number(version)) && version == "all") {
       brwoserVerTemp = version
     }
-    // console.log(brwoserVerTemp)
     return brwoserVerTemp
   },
 

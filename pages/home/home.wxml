@@ -1,23 +1,26 @@
 <button bindtap="getJson" style="display: {{_getJsonBtnStatus}}">加载数据</button>
 <view>{{ _timeStamp }}</view>
-<block wx:for="{{ _attrShowList }}" wx:key="attrShowList">
-	<!-- <view>{{ ((index)%3)-1 }}</view> -->
-	<block wx:if="{{ ((index)%3)-1 == 0 }}">
-		<view>{{ item }}</view>
-	</block>
-	<block wx:if="{{ ((index)%3)-2 == 0 }}">
-		<view wx:for="{{ item }}" wx:key="version">{{ item }}</view>
-	</block>
-</block>
 
---------------
-<block wx:for="{{ attrDetail }}" wx:key="attrDetail">
-	<!-- <view>{{ item.stats.index }}</view> -->
-	<view>{{ item.usage_perc_y }}</view>
-	<view>{{ item.usage_perc_a }}</view>
+<block wx:for="{{ attrNameArray }}" wx:key="browserInfo">
+	<view class="showItem">
+		<block wx:if="{{ index%3 == 0 }}">
+			<view class="attrName">{{ item }}</view>
+		</block>
+		<block wx:if="{{ index%3 == 1 }}">
+			<view class="attrName">{{ item }}</view>
+		</block>
+		<block wx:if="{{ ((index)%3) == 2 }}">
+			<view wx:for="{{ item }}" wx:key="type" class="type">
+				<block wx:if="{{ ((index)%2) == 0 }}">{{ item }}</block>
+				<block wx:if="{{ ((index)%2) == 1 }}">
+					<view wx:for="{{ item }}" wx:key="version" class="version">
+						<block wx:if="{{ item != 0 }}">
+							{{ item }}
+						</block>
+					</view>
+				</block>
+			</view>
+		</block>
+		------------------------------------------
+	</view>
 </block>
-===============
-
-<!-- <block wx:for="{{ _attrShowList }}" wx:key="browserType">
-	<view>{{ index+1 }} : {{ item }}</view>
-	</block> -->
