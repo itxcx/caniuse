@@ -3,9 +3,11 @@ var app = getApp()
 Page({
   onLoad: function (res) {
     var that = this
+    var _attrSearchList = []
     // todo list ✔︎
     // 搜索
-    //   |-  ✔︎ 搜索判断结果展示（无结果、错误信息）
+    //   |- ✔︎ 搜索判断结果展示（无结果、错误信息）
+    //   |- ✔︎ 搜索结果数据不全的问题
     //   |- 美化搜索结果展示
     // 数据过多时分段加载（点击或者下拉）
     // “分享”页面增加
@@ -13,12 +15,23 @@ Page({
     //   |- 通过分享进入时如果未加载过数据，给提示是否加载数据
     //   |- 通过分享进入时，直接展示所分享的页面，并提供进入搜索页的入口
     // “说明”页面
-    // 页面样式美化
+    // ✔︎ 页面样式美化
+    //   |- ✔︎ 兼容性颜色块的位置调整
+    //   |- ✔︎ 手机中输入框自动获取焦点频繁的问题
     // 加载数据时，添加一个 loading 动画效果
+
+    // ☀︎ 真机中与开发工具中看到的 json 队列不同，导致最终数据的错误
     that.setData({
       _jsonTotal: wx.getStorageSync("jsonTotal"),
       _timeStamp: wx.getStorageSync("timeStamp"),
       _CSS2Title: ""
+    })
+    for(var p=0;p<that.data._jsonTotal;p++){
+      // console.log(wx.getStorageSync("_attrSearchList")[p])
+      _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
+    }
+    that.setData({
+      _attrSearchList: _attrSearchList
     })
     if (wx.getStorageSync("timeStamp")) {
       wx.showToast({
@@ -27,11 +40,13 @@ Page({
       })
       // var _showJson = that.showJson(); // 展示数据
       that.setData({
-        _getJsonBtnStatus: "none"
+        _getJsonBtnStatus: "none",
+        inputFocus: true
       })
     } else {
       that.setData({
         _getJsonBtnStatus: "",
+        inputFocus: false,
         _getJsonBtnText: "加载数据" // 加载按钮显示出来
       })
     }
@@ -60,7 +75,7 @@ Page({
       })
     }else{
       var _showJson = that.showJson(getValue)
-      console.log(getValue)
+      // console.log(getValue)
     }
   },
   
@@ -71,6 +86,21 @@ Page({
     }
     if(brwoserVerTemp < parseFloat(Number(version))) {
       brwoserVerTemp = version
+    }else if(isNaN(Number(version)) && version == "all") {
+      brwoserVerTemp = version
+    }
+    return brwoserVerTemp
+  },
+
+  // 判断浏览器的版本，获取最高版本
+  judgeVerThan: function(brwoserVerTemp,version) {
+    if(version.match(/\-/ig)){
+      version = version.split(/\-/ig)[1]
+    }
+    if(brwoserVerTemp < parseFloat(Number(version))) {
+      if( brwoserVerTemp == 0) {
+        brwoserVerTemp = version
+      }
     }else if(isNaN(Number(version)) && version == "all") {
       brwoserVerTemp = version
     }
@@ -129,10 +159,30 @@ Page({
       },
       success: function (res) {
         var listNum = 0 // 计算属性列表的总数
+        var attrSearchList = []
         for (let attrList in res.data.data) {
           listNum++
+          attrSearchList.push([
+            res.data.data[attrList].title,
+            res.data.data[attrList].keywords,
+            res.data.data[attrList].description
+            ])
+          // wx.setStorage({
+          //   key: attrList,
+          //   data: res.data.data[attrList]
+          // })
           wx.setStorageSync(attrList, res.data.data[attrList])
+          // wx.setStorageSync(attrSearchList, [
+          //   res.data.data[attrList].title,
+          //   res.data.data[attrList].keywords,
+          //   res.data.data[attrList].description
+          //   ])
+          // console.log(res.data.data[attrList].title)
         }
+        wx.setStorageSync("_attrSearchList",attrSearchList)
+        that.setData({
+          _attrSearchList: attrSearchList
+        })
 
         var CSS2List = [
           'background-color',
@@ -211,7 +261,7 @@ Page({
             findCSS3 = 0
 
         for (let c2 = 0; c2 < C2List.length; c2++) {
-          if(C2List[c2].match(new RegExp(findValue))) {
+          if(C2List[c2].toLowerCase().match(new RegExp(findValue))) {
             _CSS2List.push(C2List[c2])
             that.setData({
               _CSS2List,
@@ -225,16 +275,26 @@ Page({
           that.setData({ // 当 CSS2 属性找不到时，清除 CSS2 的列表
             _CSS2List: "",
             _CSS2Title: "",
-            _CSS2Descrtion: ""
+            _CSS2Descrtion: "",
+            inputFocus: false
           })
         }
 
-        for(let i = 0, j = 0; i < res.keys.length - 3; i++){
-          if(res.keys[i].match(new RegExp(findValue))){
-            // console.log(res.keys[i].match(new RegExp(findValue)) || wx.getStorageSync(res.keys[i]).title.match(new RegExp(findValue)) || wx.getStorageSync(res.keys[i]).keywords.match(new RegExp(findValue)) || wx.getStorageSync(res.keys[i]).description.match(new RegExp(findValue)))
+        console.log(res)
+
+        for(let i = 0, j = 0; i < res.keys.length - 4; i++){
+          // console.log(res.keys[i]) // 从 localStorage 中获取的keys值
+          // console.log(that.data._attrSearchList[i][j])
+          if(res.keys[i].match(new RegExp(findValue)) || that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue))) {
+            console.log(res.keys[i])
+          }
+          if(res.keys[i].toLowerCase().match(new RegExp(findValue)) || that.data._attrSearchList[i][0].toLowerCase().match(new RegExp(findValue)) || that.data._attrSearchList[i][1].toLowerCase().match(new RegExp(findValue)) || that.data._attrSearchList[i][2].toLowerCase().match(new RegExp(findValue))){
+            // console.log(res.keys[i].match(new RegExp(findValue)) || that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)))
             // console.log(wx.getStorageSync(res.keys[i]).title)
+            // console.log(res.keys[i])
             attrNameArray.push(res.keys[i])
-            attrDetailArray.push(wx.getStorageSync(res.keys[i]))
+            attrDetailArray.push(wx.getStorageSync(res.keys[i])) // 搜索后所得的详细内容
+            // console.log(attrDetailArray)
 
             attrNameArray.push([
               attrDetailArray[j].title,
@@ -255,7 +315,7 @@ Page({
               for(let ver in attrDetailArray[j].stats[type]) {
                 compatibility = attrDetailArray[j].stats[type][ver] // 兼容性列表
                 if(compatibility.match(/y/ig)){
-                  brwoserVerY = that.judgeVer(brwoserVerY,ver)
+                  brwoserVerY = that.judgeVerThan(brwoserVerY,ver)
                 }else if(compatibility.match(/n/ig)) {
                   brwoserVerN = that.judgeVer(brwoserVerN,ver)
                 }else if(compatibility.match(/u/ig)) {
@@ -270,14 +330,15 @@ Page({
             attrNameArray.push(browserTypeArray)
             that.setData({
               attrNameArray, // 获取最终筛选后 json 的列表信息
-              inputValue: findValue,
-              inputFocus: true
+              inputValue: findValue
             })
 
             j++
             findCSS3++
           }
         }
+
+        console.log(findCSS3)
 
         if(findCSS3 == 0){
           that.setData({ // 当 CSS3 属性找不到时，清除 CSS3 的列表

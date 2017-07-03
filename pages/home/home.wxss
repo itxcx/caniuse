@@ -127,14 +127,26 @@
 .verList .version:nth-child(2) {
 	background-color: #39b54a;
 }
+.verList .version:nth-child(2):after {
+	content: " ⬆︎"
+}
 .verList .version:nth-child(3) {
 	background-color: #c44230;
+}
+.verList .version:nth-child(3):after {
+	content: " ⬇︎"
 }
 .verList .version:nth-child(4) {
 	background-color: #838383;
 }
+.verList .version:nth-child(4):after {
+	content: " ⬇︎"
+}
 .verList .version:nth-child(5) {
 	background-color: #A8BD04;
+}
+.verList .version:nth-child(5):after {
+	content: " ⬇︎"
 }
 
 
