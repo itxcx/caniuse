@@ -1,6 +1,3 @@
-page {
-	padding-bottom: 30rpx;
-}
 .updata_time {
 	height: 42rpx;
 	overflow: hidden;
@@ -56,7 +53,6 @@ page {
 }
 .caniuse_list {
 	overflow: hidden;
-	margin-bottom: 20rpx;
 }
 .item_box {
 	overflow: hidden;
@@ -67,42 +63,86 @@ page {
 	color: #666;
 	background-color: #f2e8d5;
 }
-.c3T {
+.item_box:nth-child(3n+1) {
+	display: none;
+}
+.item_box:nth-child(3n) {
+	display: flex;
+	flex-wrap: wrap;
+	padding: 20rpx 0;
+	margin-top: -40rpx;
+	margin-bottom: 20rpx;
+}
+.attrInfo:nth-child(1) {
+	padding-bottom: 15rpx;
 	font-size: 36rpx;
 	font-weight: bold;
 	color: #333;
 }
-.c3D {
+.attrInfo:nth-child(2) {
 	display: block;
-	padding-bottom: 20rpx;
+	padding-bottom: 15rpx;
 	color: #999;
 }
-.c3UA {
+.attrInfo:nth-child(4) {
 	color: #7e7e00;
 }
-.c3UY {
+.attrInfo:nth-child(3) {
 	color: #009114;
 }
-.item_list {
-	display: flex;
-	flex-wrap: wrap;
-	padding: 20rpx 0;
+.attrInfo:empty {
+	display: none;
 }
-.browser_items {
-	flex: 1 0 15%;
+.type {
+	display: flex;
+}
+.verList {
+	flex: 1 0 20%;
 	display: flex;
 	flex-direction: column-reverse;
-	justify-content: flex-start;
 	margin: 8rpx;
 	background-color: rgba(0,0,0,0.06);
 }
+.verList .version {
+	flex: 0 1 15%;
+	flex-direction: column-reverse;
+	justify-content: flex-start;
+	align-items: center;
+	padding: 10rpx 20rpx;
+	text-align: center;
+	line-height: 1.2;
+}
+.verList .version:empty {
+	display: none;
+}
+.verList .version {
+	position: relative;
+	padding: 10rpx;
+	text-align: center;
+	color: #fff;
+}
+.verList .version:nth-child(1) {
+	color: #000;
+}
+.verList .version:nth-child(2) {
+	background-color: #39b54a;
+}
+.verList .version:nth-child(3) {
+	background-color: #c44230;
+}
+.verList .version:nth-child(4) {
+	background-color: #838383;
+}
+.verList .version:nth-child(5) {
+	background-color: #A8BD04;
+}
+
+
 .browser_items text {
 	display: flex;
 	flex: 0 1 60rpx;
 	font-size: 24rpx;
 	line-height: 20rpx;
-	align-items: center;
-	justify-content:center;
 }
 .browser_items text text {
 	flex: 1 1 auto;
@@ -110,8 +150,16 @@ page {
 }
 .red:empty,
 .yellow:empty,
-.green:empty {
+.green:empty,
+.unknow:empty {
 	display: none;
+}
+.unknow {
+	position: relative;
+	padding: 10rpx;
+	text-align: center;
+	color: #fff;
+	background-color: #838383;
 }
 .red {
 	position: relative;
