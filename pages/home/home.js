@@ -1,5 +1,6 @@
 var app = getApp(),
-    findCSS3 = 0
+    pager = 1,
+    againNumber = 0
 
 Page({
   onLoad: function (res) {
@@ -11,6 +12,8 @@ Page({
     //   |- ✔︎ 搜索结果数据不全的问题
     //   |- 美化搜索结果展示
     // 数据过多时分段加载（点击或者下拉）
+    //   |- ✔︎ 分页数据存放在 appData 中
+    //   |- 分页数据展示的问题
     // “分享”页面增加
     //   |- 选择其中一条信息后转发分享
     //   |- 通过分享进入时如果未加载过数据，给提示是否加载数据
@@ -28,19 +31,16 @@ Page({
       _CSS2Title: ""
     })
     for(var p=0;p<that.data._jsonTotal;p++){
-      // console.log(wx.getStorageSync("_attrSearchList")[p])
       _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
     }
-    // console.log(_attrSearchList)
     that.setData({
       _attrSearchList: _attrSearchList
     })
     if (wx.getStorageSync("timeStamp")) {
       wx.showToast({
-        title: '数据加载完毕',
+        title: '数据初始化……',
         duration: 1000
       })
-      // var _showJson = that.showJson(); // 展示数据
       that.setData({
         _getJsonBtnStatus: "none",
         inputFocus: true
@@ -49,40 +49,9 @@ Page({
       that.setData({
         _getJsonBtnStatus: "",
         inputFocus: false,
-        _getJsonBtnText: "加载数据" // 加载按钮显示出来
+        _getJsonBtnText: "初始化数据" // 加载按钮显示出来
       })
     }
-  },
-
-  onPullDownRefresh: function() {
-    var that = this
-    that.setData({
-      _timeStamp: wx.getStorageSync("timeStamp")
-    })
-    wx.showModal({
-      title: '重新加载数据',
-      content: '确定要重新加载数据？',
-      success: function(res) {
-        if (res.confirm) {
-          that.setData({
-            _getJsonBtnStatus: "none" // 加载按钮显示出来
-          })
-        var _loadJson = that.loadJson() // 开始使用加载 json 的函数
-        } else if (res.cancel) {
-          that.setData({
-            _getJsonBtnStatus: "" // 加载按钮显示出来
-            // _userCancelUpdate: "用户主动取消更新"
-          })
-        }
-      }
-    })
-  },
-
-  onReachBottom: function() {
-    var total = 0
-    total += 1;
-    // 网络请求
-    console.log("下拉下拉 啊啊啊啊"+findCSS3)
   },
 
   beginSearch: function(e) {
@@ -104,15 +73,15 @@ Page({
         _CSS2List: "",
         _CSS2Title: "",
         _CSS2Descrtion: "",
+        ___pager: pager,
         attrNameArray: ""
       })
     }else{
       var _showJson = that.showJson(getValue)
-      // console.log(getValue)
     }
   },
   
-  // 判断浏览器的版本，获取最高版本
+  // 判断浏览器的版本，获取最低版本
   judgeVer: function(brwoserVerTemp,version) {
     if(version.match(/\-/ig)){
       version = version.split(/\-/ig)[1]
@@ -180,7 +149,7 @@ Page({
   loadJson: function(){
     var that = this
     wx.showLoading({
-      title: "开始加载数据",
+      title: "开始初始化数据……",
       mask: true
     })
     wx.request({
@@ -195,24 +164,13 @@ Page({
         var attrSearchList = []
         for (let attrList in res.data.data) {
           listNum++
-          console.log(attrList)
           attrSearchList.push([
             attrList,
             res.data.data[attrList].title,
             res.data.data[attrList].keywords,
             res.data.data[attrList].description
             ])
-          // wx.setStorage({
-          //   key: attrList,
-          //   data: res.data.data[attrList]
-          // })
           wx.setStorageSync(attrList, res.data.data[attrList])
-          // wx.setStorageSync(attrSearchList, [
-          //   res.data.data[attrList].title,
-          //   res.data.data[attrList].keywords,
-          //   res.data.data[attrList].description
-          //   ])
-          // console.log(res.data.data[attrList].title)
         }
         wx.setStorageSync("_attrSearchList",attrSearchList)
         that.setData({
@@ -274,9 +232,9 @@ Page({
           _jsonTotal: listNum,
           _getJsonBtnStatus: "none",
           _timeStamp: wx.getStorageSync("timeStamp"),
+          ___pager: pager,
           _CSS2Title: ""
         })
-        // var _showJson = that.showJson(); // 展示数据
       },
       complete: function () {
         wx.hideLoading()
@@ -292,7 +250,8 @@ Page({
             attrNameArray = [],
             _CSS2List = [],
             C2List = wx.getStorageSync("CSS2"),
-            findCSS2 = 0
+            findCSS2 = 0,
+            findCSS3 = 0
 
         for (let c2 = 0; c2 < C2List.length; c2++) {
           if(C2List[c2].toLowerCase().match(new RegExp(findValue))) {
@@ -314,64 +273,22 @@ Page({
           })
         }
 
-        console.log(res.keys.length)
 
+        wx.showLoading({
+          title: "加载数据……"
+        })
         for(let i = 0, j = 0; i < that.data._jsonTotal; i++){
-          // console.log(res.keys[i])
-          // console.log(res.keys[i]) // 从 localStorage 中获取的keys值
-          // console.log(that.data._attrSearchList[i][j])
           if(that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)) || that.data._attrSearchList[i][3].match(new RegExp(findValue))) {
-            console.log(that.data._attrSearchList[i][1])
-            console.log(that.data._jsonTotal)
-            console.log(res.keys.length)
-          }
-          if(that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)) || that.data._attrSearchList[i][3].match(new RegExp(findValue))) {
-            // console.log(res.keys[i].match(new RegExp(findValue)) || that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)))
-            // console.log(wx.getStorageSync(res.keys[i]).title)
-            // console.log(res.keys[i])
-            // console.log("搜："+ that.data._attrSearchList[i][1])
-            // for(var findAttr = 0; findAttr < res.keys.length-1; findAttr++){
-            //   if(wx.getStorageSync(res.keys[findAttr]).title == that.data._attrSearchList[i][1]) {
-            //     console.log("终于找到了： " + wx.getStorageSync(res.keys[findAttr]).title) 
-            //   }
-            // }
             
-
-            // for(var findAttr = 0; findAttr < res.keys.length-1; findAttr++){
-            //   if(attrNameArray[j] == that.data._attrSearchList[i][0]) {
-            //     console.log("=============")
-            //     console.log(attrDetailArray[j].title)
-            //     console.log("找到了啊")
-            //     continue
-            //   }
-            // }
-
-              attrNameArray.push(res.keys[i])
-              // attrDetailArray.push(wx.getStorageSync(res.keys[i])) // 搜索后所得的详细内容
-              // console.log(attrDetailArray)
-              console.log("----------------")
-              // console.log("attrDetailArray[j].title    " + attrDetailArray[j].title)
-              // console.log("that.data._attrSearchList[i][1]   " + that.data._attrSearchList[i][1])
+            attrNameArray.push(res.keys[i])
+            let browserTypeArray = []
 
             for(var findAttr = 0; findAttr < res.keys.length-1; findAttr++){
               if(wx.getStorageSync(res.keys[findAttr]).title == that.data._attrSearchList[i][1]) {
 
-                console.log("终于找到了：")
-                // console.log(wx.getStorageSync(res.keys[findAttr]))
                 attrDetailArray.push(wx.getStorageSync(res.keys[findAttr])) // 搜索后所得的详细内容
-                console.log(attrDetailArray)
-              // if(that.data._attrSearchList[i][0]) {
-                attrNameArray.push([
-                  attrDetailArray[j].title,
-                  attrDetailArray[j].description,
-                  // attrDetailArray[j].spec,
-                  "浏览器支持率：" + attrDetailArray[j].usage_perc_y,
-                  "部分支持情况： "+attrDetailArray[j].usage_perc_a
-                  // attrDetailArray[j].notes
-                ])
 
-                let browserTypeArray = [],
-                    compatibility = []
+                let compatibility = []
                 for(let type in attrDetailArray[j].stats) {
                   let brwoserVerY = 0,
                       brwoserVerN = 0,
@@ -391,22 +308,29 @@ Page({
                   }
                   browserTypeArray.push([type,brwoserVerY,brwoserVerN,brwoserVerU,brwoserVerA])
                 }
-
+                attrNameArray.push([
+                  (j + 1) + "、" + attrDetailArray[j].title,
+                  attrDetailArray[j].description,
+                  "浏览器支持率：" + attrDetailArray[j].usage_perc_y,
+                  "部分支持情况： "+attrDetailArray[j].usage_perc_a
+                ])
                 attrNameArray.push(browserTypeArray)
-                that.setData({
-                  attrNameArray, // 获取最终筛选后 json 的列表信息
-                  inputValue: findValue
-                })
-
                 j++
                 findCSS3++
               }
             }
-            
           }
         }
 
-        console.log(findCSS3)
+        that.setData({
+          attrNameArray, // 获取最终筛选后 json 的列表信息
+          inputValue: findValue,
+          _listNumber: findCSS3*3,
+          ___pager: pager,
+          _listShowNumber: 0
+        })
+
+        wx.hideLoading()
 
         if(findCSS3 == 0){
           that.setData({ // 当 CSS3 属性找不到时，清除 CSS3 的列表
@@ -422,5 +346,38 @@ Page({
         }
       }
     })
+  },
+
+  onReachBottom: function() {
+    var that = this,
+        lastNumber = 0,
+        againNumber = 0,
+        nextList = []
+
+    if(pager<that.data._listNumber/3){
+      pager++
+      that.setData({
+        ___pager: pager
+      })
+    }
+
+    if(that.data._listShowNumber*3 >= that.data._listNumber) {
+      console.log("加载到头了！")
+    }else{
+      var test = 1;
+      for(;test<=that.data.___pager;test++){
+        for(; againNumber <= that.data.___pager * 3 - 1; againNumber++) {
+          nextList.push(that.data.attrNameArray[againNumber])
+          that.setData({
+            _____lastList: nextList
+          })
+        }
+        lastNumber++
+
+        that.setData({
+          _listShowNumber: lastNumber,
+        })
+      }
+    }
   }
 })

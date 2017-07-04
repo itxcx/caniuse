@@ -8,8 +8,7 @@
     "navigationBarTitleText": "Can I use 简化版",
     "navigationBarTextStyle":"#fff",
     "backgroundTextStyle":"#fff",
-    "bacgkroundColor": "#3D3527",
-    "enablePullDownRefresh": true
+    "bacgkroundColor": "#3D3527"
   },
   "tabBar": {
     "borderStyle": "white",
