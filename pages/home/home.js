@@ -1,4 +1,5 @@
-var app = getApp()
+var app = getApp(),
+    findCSS3 = 0
 
 Page({
   onLoad: function (res) {
@@ -20,7 +21,7 @@ Page({
     //   |- ✔︎ 手机中输入框自动获取焦点频繁的问题
     // 加载数据时，添加一个 loading 动画效果
 
-    // ☀︎ 真机中与开发工具中看到的 json 队列不同，导致最终数据的错误
+    // ✔︎ 真机中与开发工具中看到的 json 队列不同，导致最终数据的错误
     that.setData({
       _jsonTotal: wx.getStorageSync("jsonTotal"),
       _timeStamp: wx.getStorageSync("timeStamp"),
@@ -30,6 +31,7 @@ Page({
       // console.log(wx.getStorageSync("_attrSearchList")[p])
       _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
     }
+    // console.log(_attrSearchList)
     that.setData({
       _attrSearchList: _attrSearchList
     })
@@ -50,6 +52,37 @@ Page({
         _getJsonBtnText: "加载数据" // 加载按钮显示出来
       })
     }
+  },
+
+  onPullDownRefresh: function() {
+    var that = this
+    that.setData({
+      _timeStamp: wx.getStorageSync("timeStamp")
+    })
+    wx.showModal({
+      title: '重新加载数据',
+      content: '确定要重新加载数据？',
+      success: function(res) {
+        if (res.confirm) {
+          that.setData({
+            _getJsonBtnStatus: "none" // 加载按钮显示出来
+          })
+        var _loadJson = that.loadJson() // 开始使用加载 json 的函数
+        } else if (res.cancel) {
+          that.setData({
+            _getJsonBtnStatus: "" // 加载按钮显示出来
+            // _userCancelUpdate: "用户主动取消更新"
+          })
+        }
+      }
+    })
+  },
+
+  onReachBottom: function() {
+    var total = 0
+    total += 1;
+    // 网络请求
+    console.log("下拉下拉 啊啊啊啊"+findCSS3)
   },
 
   beginSearch: function(e) {
@@ -162,7 +195,9 @@ Page({
         var attrSearchList = []
         for (let attrList in res.data.data) {
           listNum++
+          console.log(attrList)
           attrSearchList.push([
+            attrList,
             res.data.data[attrList].title,
             res.data.data[attrList].keywords,
             res.data.data[attrList].description
@@ -257,8 +292,7 @@ Page({
             attrNameArray = [],
             _CSS2List = [],
             C2List = wx.getStorageSync("CSS2"),
-            findCSS2 = 0,
-            findCSS3 = 0
+            findCSS2 = 0
 
         for (let c2 = 0; c2 < C2List.length; c2++) {
           if(C2List[c2].toLowerCase().match(new RegExp(findValue))) {
@@ -280,61 +314,95 @@ Page({
           })
         }
 
-        console.log(res)
+        console.log(res.keys.length)
 
-        for(let i = 0, j = 0; i < res.keys.length - 4; i++){
+        for(let i = 0, j = 0; i < that.data._jsonTotal; i++){
+          // console.log(res.keys[i])
           // console.log(res.keys[i]) // 从 localStorage 中获取的keys值
           // console.log(that.data._attrSearchList[i][j])
-          if(res.keys[i].match(new RegExp(findValue)) || that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue))) {
-            console.log(res.keys[i])
+          if(that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)) || that.data._attrSearchList[i][3].match(new RegExp(findValue))) {
+            console.log(that.data._attrSearchList[i][1])
+            console.log(that.data._jsonTotal)
+            console.log(res.keys.length)
           }
-          if(res.keys[i].toLowerCase().match(new RegExp(findValue)) || that.data._attrSearchList[i][0].toLowerCase().match(new RegExp(findValue)) || that.data._attrSearchList[i][1].toLowerCase().match(new RegExp(findValue)) || that.data._attrSearchList[i][2].toLowerCase().match(new RegExp(findValue))){
+          if(that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)) || that.data._attrSearchList[i][3].match(new RegExp(findValue))) {
             // console.log(res.keys[i].match(new RegExp(findValue)) || that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)))
             // console.log(wx.getStorageSync(res.keys[i]).title)
             // console.log(res.keys[i])
-            attrNameArray.push(res.keys[i])
-            attrDetailArray.push(wx.getStorageSync(res.keys[i])) // 搜索后所得的详细内容
-            // console.log(attrDetailArray)
+            // console.log("搜："+ that.data._attrSearchList[i][1])
+            // for(var findAttr = 0; findAttr < res.keys.length-1; findAttr++){
+            //   if(wx.getStorageSync(res.keys[findAttr]).title == that.data._attrSearchList[i][1]) {
+            //     console.log("终于找到了： " + wx.getStorageSync(res.keys[findAttr]).title) 
+            //   }
+            // }
+            
 
-            attrNameArray.push([
-              attrDetailArray[j].title,
-              attrDetailArray[j].description,
-              // attrDetailArray[j].spec,
-              "浏览器支持率：" + attrDetailArray[j].usage_perc_y,
-              "部分支持情况： "+attrDetailArray[j].usage_perc_a
-              // attrDetailArray[j].notes
-            ])
+            // for(var findAttr = 0; findAttr < res.keys.length-1; findAttr++){
+            //   if(attrNameArray[j] == that.data._attrSearchList[i][0]) {
+            //     console.log("=============")
+            //     console.log(attrDetailArray[j].title)
+            //     console.log("找到了啊")
+            //     continue
+            //   }
+            // }
 
-            let browserTypeArray = [],
-                compatibility = []
-            for(let type in attrDetailArray[j].stats) {
-              let brwoserVerY = 0,
-                  brwoserVerN = 0,
-                  brwoserVerU = 0,
-                  brwoserVerA = 0
-              for(let ver in attrDetailArray[j].stats[type]) {
-                compatibility = attrDetailArray[j].stats[type][ver] // 兼容性列表
-                if(compatibility.match(/y/ig)){
-                  brwoserVerY = that.judgeVerThan(brwoserVerY,ver)
-                }else if(compatibility.match(/n/ig)) {
-                  brwoserVerN = that.judgeVer(brwoserVerN,ver)
-                }else if(compatibility.match(/u/ig)) {
-                  brwoserVerU = that.judgeVer(brwoserVerU,ver)
-                }else if(compatibility.match(/a|p/ig)) {
-                  brwoserVerA = that.judgeVer(brwoserVerA,ver)
+              attrNameArray.push(res.keys[i])
+              // attrDetailArray.push(wx.getStorageSync(res.keys[i])) // 搜索后所得的详细内容
+              // console.log(attrDetailArray)
+              console.log("----------------")
+              // console.log("attrDetailArray[j].title    " + attrDetailArray[j].title)
+              // console.log("that.data._attrSearchList[i][1]   " + that.data._attrSearchList[i][1])
+
+            for(var findAttr = 0; findAttr < res.keys.length-1; findAttr++){
+              if(wx.getStorageSync(res.keys[findAttr]).title == that.data._attrSearchList[i][1]) {
+
+                console.log("终于找到了：")
+                // console.log(wx.getStorageSync(res.keys[findAttr]))
+                attrDetailArray.push(wx.getStorageSync(res.keys[findAttr])) // 搜索后所得的详细内容
+                console.log(attrDetailArray)
+              // if(that.data._attrSearchList[i][0]) {
+                attrNameArray.push([
+                  attrDetailArray[j].title,
+                  attrDetailArray[j].description,
+                  // attrDetailArray[j].spec,
+                  "浏览器支持率：" + attrDetailArray[j].usage_perc_y,
+                  "部分支持情况： "+attrDetailArray[j].usage_perc_a
+                  // attrDetailArray[j].notes
+                ])
+
+                let browserTypeArray = [],
+                    compatibility = []
+                for(let type in attrDetailArray[j].stats) {
+                  let brwoserVerY = 0,
+                      brwoserVerN = 0,
+                      brwoserVerU = 0,
+                      brwoserVerA = 0
+                  for(let ver in attrDetailArray[j].stats[type]) {
+                    compatibility = attrDetailArray[j].stats[type][ver] // 兼容性列表
+                    if(compatibility.match(/y/ig)){
+                      brwoserVerY = that.judgeVerThan(brwoserVerY,ver)
+                    }else if(compatibility.match(/n/ig)) {
+                      brwoserVerN = that.judgeVer(brwoserVerN,ver)
+                    }else if(compatibility.match(/u/ig)) {
+                      brwoserVerU = that.judgeVer(brwoserVerU,ver)
+                    }else if(compatibility.match(/a|p/ig)) {
+                      brwoserVerA = that.judgeVer(brwoserVerA,ver)
+                    }
+                  }
+                  browserTypeArray.push([type,brwoserVerY,brwoserVerN,brwoserVerU,brwoserVerA])
                 }
+
+                attrNameArray.push(browserTypeArray)
+                that.setData({
+                  attrNameArray, // 获取最终筛选后 json 的列表信息
+                  inputValue: findValue
+                })
+
+                j++
+                findCSS3++
               }
-              browserTypeArray.push([type,brwoserVerY,brwoserVerN,brwoserVerU,brwoserVerA])
             }
-
-            attrNameArray.push(browserTypeArray)
-            that.setData({
-              attrNameArray, // 获取最终筛选后 json 的列表信息
-              inputValue: findValue
-            })
-
-            j++
-            findCSS3++
+            
           }
         }
 
