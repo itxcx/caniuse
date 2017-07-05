@@ -4,7 +4,7 @@
 
 	<form bindsubmit="formSubmit">
 		<view class="search_input">
-			<text>Can I use</text> <input type="text" confirm-type="search" placeholder-style="color: #d8d8d8" placeholder="输入属性后按键盘上的搜索" bindinput="beginSearch" focus="{{ inputFocus }}" bindconfirm="bindconfirm" />
+			<text>Can I use</text> <input type="text" confirm-type="search" placeholder-style="color: #d8d8d8" placeholder="输入属性后按键盘上的搜索" bindinput="beginSearch" focus="{{ inputFocus }}" bindconfirm="bindconfirm" disabled="{{ inputDisabled }}" />
 		</view>
 	</form>
 
@@ -19,11 +19,12 @@
 	</block>
 
 	<view class="colorSimple">
+		<text class="pager" wx:if="{{ ___pager>0 }}">共有：{{ ___pager }}/{{ _listNumber/3 }}</text>
 		<text class="green">支持</text> <text class="yellow">部分支持</text> <text class="red">不支持</text> <text class="unknow">未知</text>
 	</view>
 
 	<view class="caniuse_list">
-		<block wx:for="{{ attrNameArray }}" wx:key="browserInfo">
+		<block wx:for="{{ _____lastList }}" wx:key="browserInfo">
 			<view class="item_box">
 				<block wx:if="{{ index%3 == 1 }}">
 					<view wx:for="{{ item }}" wx:key="detail" class="attrInfo">{{ item }}</view>

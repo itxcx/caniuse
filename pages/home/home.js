@@ -1,34 +1,17 @@
 var app = getApp(),
-    pager = 1,
+    pager = 0,
     againNumber = 0
 
 Page({
   onLoad: function (res) {
     var that = this
     var _attrSearchList = []
-    // todo list ✔︎
-    // 搜索
-    //   |- ✔︎ 搜索判断结果展示（无结果、错误信息）
-    //   |- ✔︎ 搜索结果数据不全的问题
-    //   |- 美化搜索结果展示
-    // 数据过多时分段加载（点击或者下拉）
-    //   |- ✔︎ 分页数据存放在 appData 中
-    //   |- 分页数据展示的问题
-    // “分享”页面增加
-    //   |- 选择其中一条信息后转发分享
-    //   |- 通过分享进入时如果未加载过数据，给提示是否加载数据
-    //   |- 通过分享进入时，直接展示所分享的页面，并提供进入搜索页的入口
-    // “说明”页面
-    // ✔︎ 页面样式美化
-    //   |- ✔︎ 兼容性颜色块的位置调整
-    //   |- ✔︎ 手机中输入框自动获取焦点频繁的问题
-    // 加载数据时，添加一个 loading 动画效果
-
-    // ✔︎ 真机中与开发工具中看到的 json 队列不同，导致最终数据的错误
+    
     that.setData({
       _jsonTotal: wx.getStorageSync("jsonTotal"),
       _timeStamp: wx.getStorageSync("timeStamp"),
-      _CSS2Title: ""
+      _CSS2Title: "",
+      inputDisabled: true
     })
     for(var p=0;p<that.data._jsonTotal;p++){
       _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
@@ -43,11 +26,13 @@ Page({
       })
       that.setData({
         _getJsonBtnStatus: "none",
+        inputDisabled: false,
         inputFocus: true
       })
     } else {
       that.setData({
         _getJsonBtnStatus: "",
+        inputDisabled: true,
         inputFocus: false,
         _getJsonBtnText: "初始化数据" // 加载按钮显示出来
       })
@@ -63,7 +48,8 @@ Page({
 
   bindconfirm: function() {
     var that = this,
-        getValue = that.data.inputValue
+        getValue = that.data.inputValue,
+        pager = 0
     if( getValue == "" || getValue == undefined ) {
       wx.showToast({
         title: "你确认输入东西？",
@@ -73,8 +59,9 @@ Page({
         _CSS2List: "",
         _CSS2Title: "",
         _CSS2Descrtion: "",
-        ___pager: pager,
-        attrNameArray: ""
+        attrNameArray: "",
+        ___pager: 0,
+        _____lastList: ""
       })
     }else{
       var _showJson = that.showJson(getValue)
@@ -135,7 +122,6 @@ Page({
               } else if (res.cancel) {
                 that.setData({
                   _getJsonBtnStatus: "" // 加载按钮显示出来
-                  // _userCancelUpdate: "用户主动取消更新"
                 })
               }
             }
@@ -233,7 +219,9 @@ Page({
           _getJsonBtnStatus: "none",
           _timeStamp: wx.getStorageSync("timeStamp"),
           ___pager: pager,
-          _CSS2Title: ""
+          _CSS2Title: "",
+          inputDisabled: false,
+          inputFocus: true
         })
       },
       complete: function () {
@@ -252,7 +240,7 @@ Page({
             C2List = wx.getStorageSync("CSS2"),
             findCSS2 = 0,
             findCSS3 = 0
-
+        pager = 0
         for (let c2 = 0; c2 < C2List.length; c2++) {
           if(C2List[c2].toLowerCase().match(new RegExp(findValue))) {
             _CSS2List.push(C2List[c2])
@@ -273,10 +261,14 @@ Page({
           })
         }
 
-
         wx.showLoading({
           title: "加载数据……"
         })
+        that.setData({
+          attrNameArray: "",
+          ___pager: pager
+        })
+
         for(let i = 0, j = 0; i < that.data._jsonTotal; i++){
           if(that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)) || that.data._attrSearchList[i][3].match(new RegExp(findValue))) {
             
@@ -330,11 +322,19 @@ Page({
           _listShowNumber: 0
         })
 
+        var reachBottom = that.onReachBottom();        
+
         wx.hideLoading()
+
+        wx.showToast({
+          title: "共有 " + findCSS3 + " 条数据",
+          duration: 1500
+        })
 
         if(findCSS3 == 0){
           that.setData({ // 当 CSS3 属性找不到时，清除 CSS3 的列表
-            attrNameArray: ""
+            attrNameArray: "",
+            _____lastList: ""
           })
         }
 
@@ -359,25 +359,25 @@ Page({
       that.setData({
         ___pager: pager
       })
-    }
 
-    if(that.data._listShowNumber*3 >= that.data._listNumber) {
-      console.log("加载到头了！")
-    }else{
-      var test = 1;
-      for(;test<=that.data.___pager;test++){
-        for(; againNumber <= that.data.___pager * 3 - 1; againNumber++) {
-          nextList.push(that.data.attrNameArray[againNumber])
+      // if(test*3 >= that.data._listNumber) {
+      //   console.log("加载到头了！")
+      // }else{
+        var test = 1;
+        for(;test<=that.data.___pager;test++){
+          for(; againNumber <= that.data.___pager * 3 - 1; againNumber++) {
+            nextList.push(that.data.attrNameArray[againNumber])
+          }
+            that.setData({
+              _____lastList: nextList
+            })
+          lastNumber++
           that.setData({
-            _____lastList: nextList
+            _listShowNumber: lastNumber,
           })
         }
-        lastNumber++
+      // }
 
-        that.setData({
-          _listShowNumber: lastNumber,
-        })
-      }
     }
   }
 })
