@@ -1,2372 +1,330 @@
-var app = getApp()
-var searchKey = ""
-var loadMore = ""
-var refreshAgain = 0;
-var timestamp = ""
-var list = {}
-var listKeys = []
+var app = getApp(),
+    pager = 0,
+    againNumber = 0
+
 Page({
-  onLoad: function (res) {
-    // console.log(res.queryKey)
-    var that = this;
-    var timestamp = "";
-    if(res.queryKey == "" || res.queryKey == undefined || res.queryKey == null){
-      searchKey = "xhr2";
-    }else{
-      searchKey = res.queryKey
-    }
-    that.setData({
-      post: [],
-      css3_s: [],
-      data: {
-        message: "数据加载中...",
-      }
-    })
+  onLoad: function(res){
+    var that = this
+    var _attrSearchList = []
+
     wx.showLoading({
-      title: '数据加载中',
+      title: "数据初始化……",
       mask: true
     })
+    
+    that.setData({
+      __beginUse: "",
+      _getJsonBtnStatus: "none",
+      _jsonTotal: wx.getStorageSync("jsonTotal"),
+      _timeStamp: wx.getStorageSync("timeStamp")
+    })
+    for(var p=0;p<that.data._jsonTotal;p++){
+      _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
+    }
+    that.setData({
+      _attrSearchList: _attrSearchList
+    })
+    wx.hideLoading()
+    if (wx.getStorageSync("timeStamp")) {
+      wx.showToast({
+        title: '初始化完成',
+        duration: 2000,
+        mask: true
+      })
+      that.setData({
+        inputDisabled: false,
+        inputFocus: true
+      })
+    } else {
+      that.setData({
+        __beginUse: "none",
+        _getJsonBtnStatus: "",
+        inputDisabled: true,
+        inputFocus: false,
+        _getJsonBtnText: "点我初始化数据" // 加载按钮显示出来
+      })
+    }
 
+    console.log(res)
+    // 假设一个传值过来的数据
+    that.setData({
+      shareTheTag: "Flexible Box Layout Module"
+    })
 
-    try{
-      var storageKeys = wx.getStorageInfoSync()
-      for(let y in storageKeys.keys) {
-        if(storageKeys.keys[y] == "t") {
-          timestamp = wx.getStorageSync(storageKeys.keys[y])
+    var _showJson = that.showJson(that.data.shareTheTag)
+  },
+
+  beginSearch: function(e) {
+    var that = this
+    that.setData({
+      inputValue: that.data.shareTheTag,
+      ___pager: 0,
+      _____lastList: "",
+      _listShowNumber: 0,
+      _listNumber: 0,
+      __theEnd: "",
+      __showEnd: ""
+    })
+  },
+
+  bindconfirm: function() {
+    var that = this,
+        getValue = that.data.inputValue,
+        pager = 0
+    if( getValue == "" || getValue == undefined ) {
+      wx.showToast({
+        title: "你确认输入东西？",
+        duration: 2000,
+        mask: true,
+        image: "/images/find-no.png"
+      })
+      that.setData({ // 输入为空时，清空已展示的列表
+        attrNameArray: "",
+        ___pager: 0,
+        _____lastList: ""
+      })
+    }else{
+      var _showJson = that.showJson(that.data.shareTheTag)
+    }
+  },
+  
+  // 判断浏览器的版本，获取最低版本
+  judgeVer: function(brwoserVerTemp,version) {
+    if(version.match(/\-/ig)){
+      version = version.split(/\-/ig)[1]
+    }
+    if(brwoserVerTemp < parseFloat(Number(version))) {
+      brwoserVerTemp = version
+    }else if(isNaN(Number(version)) && version == "all") {
+      brwoserVerTemp = version
+    }
+    return brwoserVerTemp
+  },
+
+  // 判断浏览器的版本，获取最高版本
+  judgeVerThan: function(brwoserVerTemp,version) {
+    if(version.match(/\-/ig)){
+      version = version.split(/\-/ig)[1]
+    }
+    if(brwoserVerTemp < parseFloat(Number(version))) {
+      if( brwoserVerTemp == 0) {
+        brwoserVerTemp = version
+      }
+    }else if(isNaN(Number(version)) && version == "all") {
+      brwoserVerTemp = version
+    }
+    return brwoserVerTemp
+  },
+
+  // 通过判断网络状态的类型后，点击加载按钮加载 json 文件
+  getJson: function () {
+    var that = this
+    wx.getNetworkType({
+      success: function(res) {
+        var networkType = res.networkType
+        that.setData({
+          __beginUse: "none",
+          _getJsonBtnStatus: "" // 加载按钮显示出来
+        })
+        if(networkType == "wifi"){ // 根据网络类型选择是否提示直接加载
+          // wifi情况下直接开始加载
+          var _loadJson = that.loadJson() // 开始使用加载 json 的函数
         }else{
-          list[y] = wx.getStorageSync(storageKeys.keys[y])
-          listKeys[y] = storageKeys.keys[y]
+          // 非 wifi 情况下提示需要消耗流量加载，确定之后即可加载数据
+          wx.showModal({
+            title: '网络状态提醒',
+            content: '目前你所连接的是 ' + networkType + " 网络，并非 wifi 网络，该数据请求可能需要 200K 以上的流量请求，确定更新？",
+            success: function(res) {
+              if (res.confirm) {
+                var _loadJson = that.loadJson() // 开始使用加载 json 的函数
+              }
+            }
+          })
         }
       }
-      if( timestamp ){
+    })
+  },
+
+  // 点击加载按钮后开始，加载 json 数据
+  loadJson: function(){
+    var that = this
+    wx.showLoading({
+      title: "开始初始化数据……",
+      mask: true
+    })
+    wx.request({
+      url: "https://raw.githubusercontent.com/Fyrd/caniuse/master/data.json",
+      data: {},
+      method: "GET",
+      header: {
+        'content-type': 'application/json'
+      },
+      success: function (res) {
+        var listNum = 0 // 计算属性列表的总数
+        var attrSearchList = []
+        for (let attrList in res.data.data) {
+          listNum++
+          attrSearchList.push([
+            attrList,
+            res.data.data[attrList].title,
+            res.data.data[attrList].keywords,
+            res.data.data[attrList].description
+          ])
+          wx.setStorageSync(attrList, res.data.data[attrList])
+        }
+        wx.setStorageSync("_attrSearchList",attrSearchList)
+        that.setData({
+          _attrSearchList: attrSearchList
+        })
+
+        // json 数据包的更新时间转换格式
+        var timestamp = res.data.updated;
         var date = new Date(timestamp * 1000);
         var formattedDate = date.getFullYear() + "/" + ('0' + (date.getMonth() + 1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) + " " + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
+        wx.setStorageSync("timeStamp", "数据最后更新时间：" + formattedDate) // 在 localstorage 中的继属性列表之后增加时间戳格式
+        wx.setStorageSync("jsonTotal", listNum) // 在 localstorage 中的继属性列表之后增加属性列表的总数
 
-        wx.showToast({
-          title: '加载完成！',
-          icon: 'success',
-          duration: 1500
-        })
+        wx.setStorageSync("CSS2",CSS2List)
 
+        // json 数据包的更新时间写入data
         that.setData({
-          data: {
-            message: "数据更新时间：" + formattedDate
-          },
-          inputBtn: {
-            focus: true,
-            disabled: false,
-            disabledBtn: true
-          }
+          _jsonTotal: listNum,
+          __beginUse: "",
+          _getJsonBtnStatus: "none",
+          _timeStamp: wx.getStorageSync("timeStamp"),
+          ___pager: pager,
+          inputDisabled: false,
+          inputFocus: true
         })
-
-
-
-    that.setData({
-      data: {
-        message: "数据更新时间：" + formattedDate
       },
-      showTitle: searchKey,
-      css2: [
-        'background-color',
-        'background-image',
-        'background-position (2 params)',
-        'background-repeat (repeat | repeat-x | repeat-y | no-repeat)',
-        'border-collapse (collapse | separate)',
-        'border-color',
-        'border-spacing',
-        'border-style',
-        'bottom',
-        'color',
-        'clear (none | left | right | both)',
-        'display (none | inline | block | list-item)',
-        'float (none | left | right)',
-        'font-family',
-        'font-size',
-        'font-style (normal | italic | oblique)',
-        'font-variant (normal | small-caps)',
-        'font-weight',
-        'height',
-        'left',
-        'line-height',
-        'list-style',
-        'list-style-image',
-        'list-style-position',
-        'margin',
-        'overflow (visible | hidden | scroll | auto)',
-        'padding',
-        'position (static | relative | absolute)',
-        'right',
-        'text-align (left | right | center | justify)',
-        'text-decoration (none | underline | overline | line-through)',
-        'text-indent',
-        'text-transform (capitalize | uppercase | lowercase | none)',
-        'top',
-        'width',
-        'word-spacing',
-        'visibility (visible | hidden)',
-        'z-index'
-      ]
-    })
-
-    var css3_s = [];
-    var css3_sR = [];
-
-    for(let u in that.data.css2){
-      if(that.data.css2[u].match(searchKey)){
-        that.data.css2[u] = that.data.css2[u]
-      }else{
-        that.data.css2[u] = ""
+      complete: function () {
+        wx.hideLoading()
       }
-
-      that.setData({
-        css2_s: that.data.css2
-      })
-    }
-
-    var c3temp = 0;
-    var c3B = 0;
-    var loopNum = 0;
-
-    refreshAgain += 4;
-
-    for(let p in list) {
-      if(listKeys[p].toLowerCase().match(searchKey) || list[p].title.toLowerCase().match(searchKey) || list[p].keywords.toLowerCase().match(searchKey)|| list[p].description.toLowerCase().match(searchKey)) {
-
-        var temp_n = 0;
-        var temp_a = 0;
-        var temp_y = 0;
-
-        css3_sR[0] = css3_s[0] = temp_n = "";
-        css3_sR[1] = css3_s[1] = temp_a = "";
-        css3_sR[2] = css3_s[2] = temp_y = "";
-
-        for(let a in list[p].stats.ie){
-          if(list[p].stats.ie[a].match(/n|p|不支持/ig)){
-            list[p].stats.ie[a] = "版本：" + a + " 及以下【不支持】"
-            // css3_s[0] = a;
-            css3_s[0] = Number.parseFloat(a.replace(/(\d.*)[-]/ig,0));
-            // console.log(css3_s[0])
-          }else if(list[p].stats.ie[a].match(/a|部分支持/ig)){
-            list[p].stats.ie[a] = "版本：" + a + " 及以下【部分支持，可能需要浏览器前缀】"
-            // css3_s[1] = a;
-            css3_s[1] = Number.parseFloat(a.replace(/[-](\d.*)/ig,".0"));
-            // console.log(list[p].stats.ie[a])
-          }else if(list[p].stats.ie[a].match(/y|已支持/ig)){
-            list[p].stats.ie[a] = "版本：" + a + " 【已支持】"
-            // css3_s[2] = a;
-            css3_s[2] = Number.parseFloat(a.replace(/[-](\d.*)/ig,".0"));
-            // console.log(css3_s[2])
-          }
-
-          if(temp_n > Number.parseFloat(css3_s[0]) && temp_n != 0) {
-            css3_s[0] = temp_n;
-          }else{
-            temp_n = css3_s[0];
-          }
-
-          if(temp_a <= Number.parseFloat(css3_s[1]) && temp_a != 0) {
-            css3_s[1] = temp_a;
-          }else{
-            temp_a = css3_s[1];
-          }
-
-          if(temp_y <= Number.parseFloat(css3_s[2]) && temp_y != 0) {
-            css3_s[2] = temp_y;
-          }else{
-            temp_y = css3_s[2];
-          }
-
-          if(temp_n != undefined){
-            css3_sR[0] = temp_n
-          }
-
-          if(temp_a != undefined){
-            css3_sR[1] = temp_a
-          }
-
-          if(temp_y != undefined){
-            css3_sR[2] = temp_y
-          }
-        }
-
-        var temp_n1 = 0;
-        var temp_a1 = 0;
-        var temp_y1 = 0;     
-
-        css3_sR[3] = css3_s[3] = temp_n1 = "";
-        css3_sR[4] = css3_s[4] = temp_a1 = "";
-        css3_sR[5] = css3_s[5] = temp_y1 = "";       
-        for(let a1 in list[p].stats.edge){
-          if(list[p].stats.edge[a1].match(/n|p|不支持/ig)){
-            list[p].stats.edge[a1] = "版本：" + a1 + " 及以下【不支持】"
-            // css3_s[3] = a1;
-            css3_s[3] = Number.parseFloat(a1.replace(/(\d.*)[-]/ig,0));
-          }else if(list[p].stats.edge[a1].match(/a|部分支持/ig)){
-            list[p].stats.edge[a1] = "版本：" + a1 + " 及以下【部分支持，可能需要浏览器前缀】"
-            // css3_s[4] = a1;
-            css3_s[4] = Number.parseFloat(a1.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.edge[a1].match(/y|已支持/ig)){
-            list[p].stats.edge[a1] = "版本：" + a1 + " 【已支持】"
-            // css3_s[5] = a1;
-            css3_s[5] = Number.parseFloat(a1.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n1 > Number.parseFloat(css3_s[3]) && temp_n1 != 0) {
-            css3_s[3] = temp_n1;
-          }else{
-            temp_n1 = css3_s[3];
-          }
-
-          if(temp_a1 <= Number.parseFloat(css3_s[4]) && temp_a1 != 0) {
-            css3_s[4] = temp_a1;
-          }else{
-            temp_a1 = css3_s[4];
-          }
-
-          if(temp_y1 <= Number.parseFloat(css3_s[5]) && temp_y1 != 0) {
-            css3_s[5] = temp_y1;
-          }else{
-            temp_y1 = css3_s[5];
-          }
-
-          if(temp_n1 != undefined){
-            css3_sR[3] = temp_n1
-          }
-
-          if(temp_a1 != undefined){
-            css3_sR[4] = temp_a1
-          }
-
-          if(temp_y1 != undefined){
-            css3_sR[5] = temp_y1
-          }
-        }
-        
-        var temp_n2 = 0;
-        var temp_a2 = 0;
-        var temp_y2 = 0;
-
-        css3_sR[6] = css3_s[6] = temp_n2 = "";
-        css3_sR[7] = css3_s[7] = temp_a2 = "";
-        css3_sR[8] = css3_s[8] = temp_y2 = "";
-        for(let a2 in list[p].stats.firefox){
-          if(list[p].stats.firefox[a2].match(/n|p|不支持/ig)){
-            list[p].stats.firefox[a2] = "版本：" + a2 + " 及以下【不支持】"
-            // css3_s[6] = a2;
-            css3_s[6] = Number.parseFloat(a2.replace(/(\d.*)[-]/ig,0));
-          }else if(list[p].stats.firefox[a2].match(/a|部分支持/ig)){
-            list[p].stats.firefox[a2] = "版本：" + a2 + " 及以下【部分支持，可能需要浏览器前缀】"
-            // css3_s[7] = a2;
-           // console.log(a2)
-            css3_s[7] = Number.parseFloat(a2.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.firefox[a2].match(/y|已支持/ig)){
-            list[p].stats.firefox[a2] = "版本：" + a2 + " 【已支持】"
-            // css3_s[8] = a2;
-            css3_s[8] = Number.parseFloat(a2.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n2 > css3_s[6] && temp_n2 != 0) {
-            css3_s[6] = temp_n2;
-          }else{
-            temp_n2 = css3_s[6];
-          }
-
-          if(temp_a2 <= Number.parseFloat(css3_s[7]) && temp_a2 != 0) {
-            css3_s[7] = temp_a2;
-          }else{
-            temp_a2 = css3_s[7];
-          }
-
-          if(temp_y2 <= Number.parseFloat(css3_s[8]) && temp_y2 != 0) {
-            css3_s[8] = temp_y2;
-          }else{
-            temp_y2 = css3_s[8];
-          }
-
-          if(temp_n2 != undefined){
-            css3_sR[6] = temp_n2
-          }
-
-          if(temp_a2 != undefined){
-            css3_sR[7] = temp_a2
-          }
-
-          if(temp_y2 != undefined){
-            css3_sR[8] = temp_y2
-          }
-        }
-        
-        var temp_n3 = 0;
-        var temp_a3 = 0;
-        var temp_y3 = 0;
-
-        css3_sR[9] = css3_s[9] = temp_n3 = "";
-        css3_sR[10] = css3_s[10] = temp_a3 = "";
-        css3_sR[11] = css3_s[11] = temp_y3 = "";
-        for(let a3 in list[p].stats.chrome){
-          if(list[p].stats.chrome[a3].match(/n|p|不支持/ig)){
-            list[p].stats.chrome[a3] = "版本：" + a3 + " 及以下【不支持】"
-            // css3_s[9] = a3;
-            css3_s[9] = Number.parseFloat(a3.replace(/(\d.*)[-]/ig,0));
-          }else if(list[p].stats.chrome[a3].match(/a|部分支持/ig)){
-            list[p].stats.chrome[a3] = "版本：" + a3 + " 及以下【部分支持，可能需要浏览器前缀】"
-            // css3_s[10] = a3;
-            css3_s[10] = Number.parseFloat(a3.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.chrome[a3].match(/y|已支持/ig)){
-            list[p].stats.chrome[a3] = "版本：" + a3 + " 【已支持】"
-            // css3_s[11] = a3;
-            css3_s[11] = Number.parseFloat(a3.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n3 > css3_s[9] && temp_n3 != 0) {
-            css3_s[9] = temp_n3;
-          }else{
-            temp_n3 = css3_s[9];
-          }
-
-          if(temp_a3 <= Number.parseFloat(css3_s[10]) && temp_a3 != 0) {
-            css3_s[10] = temp_a3;
-          }else{
-            temp_a3 = css3_s[10];
-          }
-
-          if(temp_y3 <= Number.parseFloat(css3_s[11]) && temp_y3 != 0) {
-            css3_s[11] = temp_y3;
-          }else{
-            temp_y3 = css3_s[11];
-          }
-
-          if(temp_n3 != undefined){
-            css3_sR[9] = temp_n3
-          }
-
-          if(temp_a3 != undefined){
-            css3_sR[10] = temp_a3
-          }
-
-          if(temp_y3 != undefined){
-            css3_sR[11] = temp_y3
-          }
-        }
-        
-        var temp_n4 = 0;
-        var temp_a4 = 0;
-        var temp_y4 = 0;
-
-        css3_sR[12] = css3_s[12] = temp_n4 = "";
-        css3_sR[13] = css3_s[13] = temp_a4 = "";
-        css3_sR[14] = css3_s[14] = temp_y4 = "";
-        for(let a4 in list[p].stats.safari){
-          if(list[p].stats.safari[a4].match(/n|p|不支持/ig)){
-            list[p].stats.safari[a4] = "版本：" + a4 + " 及以下【不支持】"
-            // css3_s[12] = a4;
-            css3_s[12] = Number.parseFloat(a4.replace(/(\d.*)[-]/ig,0));
-            Number.parseFloat(a4)?css3_s[12] = a4:css3_s[12] = 1
-          }else if(list[p].stats.safari[a4].match(/a|部分支持/ig)){
-            list[p].stats.safari[a4] = "版本：" + a4 + " 及以下【部分支持，可能需要浏览器前缀】"
-            Number.parseFloat(a4)?css3_s[13] = a4:css3_s[13] = 1
-            // css3_s[13] = a4;
-            css3_s[13] = Number.parseFloat(a4.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.safari[a4].match(/y|已支持/ig)){
-            list[p].stats.safari[a4] = "版本：" + a4 + " 【已支持】"
-            Number.parseFloat(a4)?css3_s[14] = a4:css3_s[14] = 10000
-          }
-
-          if(temp_n4 > Number.parseFloat(css3_s[12]) && temp_n4 != 0) {
-            css3_s[12] = temp_n4;
-          }else{
-            temp_n4 = css3_s[12];
-          }
-
-          if(temp_a4 <= Number.parseFloat(css3_s[13]) && temp_a4 != 0) {
-            css3_s[13] = temp_a4;
-          }else{
-            temp_a4 = css3_s[13];
-          }
-
-          if(temp_y4 <= Number.parseFloat(css3_s[14]) && temp_y4 != 0) {
-            css3_s[14] = temp_y4;
-          }else{
-            temp_y4 = css3_s[14];
-          }
-            
-          if(temp_n4 != undefined){
-            css3_sR[12] = temp_n4
-          }
-
-          if(temp_a4 != undefined){
-            css3_sR[13] = temp_a4
-          }
-
-          if(temp_y4 != undefined){
-            css3_sR[14] = temp_y4
-          }
-        }
-        
-        var temp_n5 = 0;
-        var temp_a5 = 0;
-        var temp_y5 = 0;
-
-        css3_sR[15] = css3_s[15] = temp_n5 = "";
-        css3_sR[16] = css3_s[16] = temp_a5 = "";
-        css3_sR[17] = css3_s[17] = temp_y5 = "";
-        for(let a5 in list[p].stats.opera){
-          if(list[p].stats.opera[a5].match(/n|p|不支持/ig)){
-            list[p].stats.opera[a5] = "版本：" + a5 + " 及以下【不支持】"
-            css3_s[15] = a5;
-          }else if(list[p].stats.opera[a5].match(/a|部分支持/ig)){
-            list[p].stats.opera[a5] = "版本：" + a5 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[16] = a5;
-          }else if(list[p].stats.opera[a5].match(/y|已支持/ig)){
-            list[p].stats.opera[a5] = "版本：" + a5 + " 【已支持】"
-            css3_s[17] = a5;
-          }
-
-          if(temp_n5 > Number.parseFloat(css3_s[15]) && temp_n5 != 0) {
-            css3_s[15] = temp_n5;
-          }else{
-            temp_n5 = css3_s[15];
-          }
-
-          if(temp_a5 <= Number.parseFloat(css3_s[16]) && temp_a5 != 0) {
-            css3_s[16] = temp_a5;
-          }else{
-            temp_a5 = css3_s[16];
-          }
-
-          if(temp_y5 <= Number.parseFloat(css3_s[17]) && temp_y5 != 0) {
-            css3_s[17] = temp_y5;
-          }else{
-            temp_y5 = css3_s[17];
-          }
-
-            
-          if(temp_n5 != undefined){
-            css3_sR[15] = temp_n5
-          }
-
-          if(temp_a5 != undefined){
-            css3_sR[16] = temp_a5
-          }
-
-          if(temp_y5 != undefined){
-            css3_sR[17] = temp_y5
-          }
-        }
-        
-        var temp_n6 = 0;
-        var temp_a6 = 0;
-        var temp_y6 = 0;
-
-        css3_sR[18] = css3_s[18] = temp_n6 = "";
-        css3_sR[19] = css3_s[19] = temp_a6 = "";
-        css3_sR[20] = css3_s[20] = temp_y6 = "";
-        for(let a6 in list[p].stats.ios_saf){
-          if(list[p].stats.ios_saf[a6].match(/n|p|不支持/ig)){
-            list[p].stats.ios_saf[a6] = "版本：" + a6 + " 及以下【不支持】"
-            css3_s[18] = a6;
-            css3_s[18] = Number.parseFloat(a6.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.ios_saf[a6].match(/a|部分支持/ig)){
-            list[p].stats.ios_saf[a6] = "版本：" + a6 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[19] = Number.parseFloat(a6.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.ios_saf[a6].match(/y|已支持/ig)){
-            list[p].stats.ios_saf[a6] = "版本：" + a6 + " 【已支持】"
-            css3_s[20] = Number.parseFloat(a6.replace(/[-](\d.*)/ig,".0"));
-          }
-
-
-
-          if(temp_n6 > Number.parseFloat(css3_s[18]) && temp_n6 != 0) {
-            css3_s[18] = temp_n6;
-          }else{
-            temp_n6 = css3_s[18];
-          }
-
-          if(temp_a6 <= Number.parseFloat(css3_s[19]) && temp_a6 != 0) {
-            css3_s[19] = temp_a6;
-          }else{
-            temp_a6 = css3_s[19];
-          }
-
-          if(temp_y6 <= Number.parseFloat(css3_s[20]) && temp_y6 != 0) {
-            css3_s[20] = temp_y6;
-          }else{
-            temp_y6 = css3_s[20];
-          }
-
-            
-          if(temp_n6 != undefined){
-            css3_sR[18] = temp_n6
-          }
-
-          if(temp_a6 != undefined){
-            css3_sR[19] = temp_a6
-          }
-
-          if(temp_y6 != undefined){
-            css3_sR[20] = temp_y6
-          }
-        }
-        
-        var temp_n7 = 0;
-        var temp_a7 = 0;
-        var temp_y7 = 0;
-
-        css3_sR[21] = css3_s[21] = temp_n7 = "";
-        css3_sR[22] = css3_s[22] = temp_a7 = "";
-        css3_sR[23] = css3_s[23] = temp_y7 = "";
-        for(let a7 in list[p].stats.op_mini){
-          if(a7.match(/all/ig)){
-            if(list[p].stats.op_mini[a7].match(/n|p|不支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 及以下【不支持】"
-              css3_sR[21] = css3_s[21] = a7;
-            }else if(list[p].stats.op_mini[a7].match(/a|部分支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 及以下【部分支持，可能需要浏览器前缀】"
-              css3_sR[22] = css3_s[22] = a7;
-            }else if(list[p].stats.op_mini[a7].match(/y|已支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 【已支持】"
-              css3_sR[23] = css3_s[23] = a7;
-              // console.log(css3_s[23])
-            }
-          }else{
-            if(list[p].stats.op_mini[a7].match(/n|p|不支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 及以下【不支持】"
-              css3_s[21] = a7;
-              css3_s[21] = Number.parseFloat(a7.replace(/(\d.*)[-]/ig,0))
-            }else if(list[p].stats.op_mini[a7].match(/a|部分支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 及以下【部分支持，可能需要浏览器前缀】"
-              css3_s[22] = Number.parseFloat(a7.replace(/[-](\d.*)/ig,".0"));
-              if(css3_s[22].match(/all/ig)){
-                css3_s[22] = a7
-              }
-            }else if(list[p].stats.op_mini[a7].match(/y|已支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 【已支持】"
-              css3_s[23] = Number.parseFloat(a7.replace(/[-](\d.*)/ig,".0"));
-              if(css3_s[23].match(/all/ig)){
-                css3_s[23] = a7
-              }
-            }
-          }
-
-          if(temp_n7 > Number.parseFloat(css3_s[21]) && temp_n7 != 0) {
-            css3_s[21] = temp_n7;
-          }else{
-            temp_n7 = css3_s[21];
-          }
-
-          if(temp_a7 <= Number.parseFloat(css3_s[22]) && temp_a7 != 0) {
-            css3_s[22] = temp_a7;
-          }else{
-            temp_a7 = css3_s[22];
-          }
-
-          if(temp_y7 <= Number.parseFloat(css3_s[23]) && temp_y7 != 0) {
-            css3_s[23] = temp_y7;
-            console.log(list[p].stats.op_mini)
-          }else{
-            temp_y7 = css3_s[23];
-          }
-
-            
-          if(temp_n7 != undefined){
-            css3_sR[21] = temp_n7
-          }
-
-          if(temp_a7 != undefined){
-            css3_sR[22] = temp_a7
-          }
-
-          if(temp_y7 != undefined){
-            css3_sR[23] = temp_y7
-          }
-        }
-        
-        var temp_n8 = 0;
-        var temp_a8 = 0;
-        var temp_y8 = 0;
-
-        css3_sR[23] = css3_s[23] = temp_n8 = "";
-        css3_sR[25] = css3_s[25] = temp_a8 = "";
-        css3_sR[26] = css3_s[26] = temp_y8 = "";
-        for(let a8 in list[p].stats.android){
-          if(list[p].stats.android[a8].match(/n|p|不支持/ig)){
-            list[p].stats.android[a8] = "版本：" + a8 + " 及以下【不支持】"
-            css3_s[24] = a8;
-            css3_s[24] = Number.parseFloat(a8.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.android[a8].match(/a|部分支持/ig)){
-            list[p].stats.android[a8] = "版本：" + a8 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[25] = Number.parseFloat(a8.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.android[a8].match(/y|已支持/ig)){
-            list[p].stats.android[a8] = "版本：" + a8 + " 【已支持】"
-            css3_s[26] = Number.parseFloat(a8.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n8 > Number.parseFloat(css3_s[24]) && temp_n8 != 0) {
-            css3_s[24] = temp_n8;
-          }else{
-            temp_n8 = css3_s[24];
-          }
-
-          if(temp_a8 <= Number.parseFloat(css3_s[25]) && temp_a8 != 0) {
-            css3_s[25] = temp_a8;
-          }else{
-            temp_a8 = css3_s[25];
-          }
-
-          if(temp_y8 <= Number.parseFloat(css3_s[26]) && temp_y8 != 0) {
-            css3_s[26] = temp_y8;
-          }else{
-            temp_y8 = css3_s[26];
-          }
-
-          if(temp_n8 != undefined){
-            css3_sR[24] = temp_n8
-          }
-
-          if(temp_a8 != undefined){
-            css3_sR[25] = temp_a8
-          }
-
-          if(temp_y8 != undefined){
-            css3_sR[26] = temp_y8
-          }
-        }
-        
-        var temp_n9 = 0;
-        var temp_a9 = 0;
-        var temp_y9 = 0;
-
-        css3_sR[27] = css3_s[27] = temp_n9 = "";
-        css3_sR[28] = css3_s[28] = temp_a9 = "";
-        css3_sR[29] = css3_s[29] = temp_y9 = "";
-        for(let a9 in list[p].stats.bb){
-          if(list[p].stats.bb[a9].match(/n|p|不支持/ig)){
-            list[p].stats.bb[a9] = "版本：" + a9 + " 及以下【不支持】"
-            css3_s[27] = a9;
-            css3_s[27] = Number.parseFloat(a9.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.bb[a9].match(/a|部分支持/ig)){
-            list[p].stats.bb[a9] = "版本：" + a9 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[28] = Number.parseFloat(a9.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.bb[a9].match(/y|已支持/ig)){
-            list[p].stats.bb[a9] = "版本：" + a9 + " 【已支持】"
-            css3_s[29] = Number.parseFloat(a9.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n9 > Number.parseFloat(css3_s[27]) && temp_n9 != 0) {
-            css3_s[27] = temp_n9;
-          }else{
-            temp_n9 = css3_s[27];
-          }
-
-          if(temp_a9 <= Number.parseFloat(css3_s[28]) && temp_a9 != 0) {
-            css3_s[28] = temp_a9;
-          }else{
-            temp_a9 = css3_s[28];
-          }
-
-          if(temp_y9 <= Number.parseFloat(css3_s[29]) && temp_y9 != 0) {
-            css3_s[29] = temp_y9;
-          }else{
-            temp_y9 = css3_s[29];
-          }
-
-          if(temp_n9 != undefined){
-            css3_sR[27] = temp_n9
-          }
-
-          if(temp_a9 != undefined){
-            css3_sR[28] = temp_a9
-          }
-
-          if(temp_y9 != undefined){
-            css3_sR[29] = temp_y9
-          }
-        }
-        
-        var temp_n10 = 0;
-        var temp_a10 = 0;
-        var temp_y10 = 0;
-
-        css3_sR[30] = css3_s[30] = temp_n10 = "";
-        css3_sR[31] = css3_s[31] = temp_a10 = "";
-        css3_sR[32] = css3_s[32] = temp_y10 = "";
-        for(let a10 in list[p].stats.op_mob){
-          if(list[p].stats.op_mob[a10].match(/n|p|不支持/ig)){
-            list[p].stats.op_mob[a10] = "版本：" + a10 + " 及以下【不支持】"
-            css3_s[30] = a10;
-            css3_s[30] = Number.parseFloat(a10.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.op_mob[a10].match(/a|部分支持/ig)){
-            list[p].stats.op_mob[a10] = "版本：" + a10 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[31] = Number.parseFloat(a10.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.op_mob[a10].match(/y|已支持/ig)){
-            list[p].stats.op_mob[a10] = "版本：" + a10 + " 【已支持】"
-            css3_s[32] = Number.parseFloat(a10.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n10 > Number.parseFloat(css3_s[30]) && temp_n10 != 0) {
-            css3_s[30] = temp_n10;
-          }else{
-            temp_n10 = css3_s[30];
-          }
-
-          if(temp_a10 <= Number.parseFloat(css3_s[31]) && temp_a10 != 0) {
-            css3_s[31] = temp_a10;
-          }else{
-            temp_a10 = css3_s[31];
-          }
-
-          if(temp_y10 <= Number.parseFloat(css3_s[32]) && temp_y10 != 0) {
-            css3_s[32] = temp_y10;
-          }else{
-            temp_y10 = css3_s[32];
-          }
-
-          if(temp_n10 != undefined){
-            css3_sR[30] = temp_n10
-          }
-
-          if(temp_a10 != undefined){
-            css3_sR[31] = temp_a10
-          }
-
-          if(temp_y10 != undefined){
-            css3_sR[32] = temp_y10
-          }
-        }
-        
-        var temp_n11 = 0;
-        var temp_a11 = 0;
-        var temp_y11 = 0;
-
-        css3_sR[33] = css3_s[33] = temp_n11 = "";
-        css3_sR[34] = css3_s[34] = temp_a11 = "";
-        css3_sR[35] = css3_s[35] = temp_y11 = "";
-        for(let a11 in list[p].stats.and_chr){
-          if(list[p].stats.and_chr[a11].match(/n|p|不支持/ig)){
-            list[p].stats.and_chr[a11] = "版本：" + a11 + " 及以下【不支持】"
-            css3_s[33] = a11;
-            css3_s[33] = Number.parseFloat(a11.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.and_chr[a11].match(/a|部分支持/ig)){
-            list[p].stats.and_chr[a11] = "版本：" + a11 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[34] = Number.parseFloat(a11.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.and_chr[a11].match(/y|已支持/ig)){
-            list[p].stats.and_chr[a11] = "版本：" + a11 + " 【已支持】"
-            css3_s[35] = Number.parseFloat(a11.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n11 > Number.parseFloat(css3_s[33]) && temp_n11 != 0) {
-            css3_s[33] = temp_n11;
-          }else{
-            temp_n11 = css3_s[33];
-          }
-
-          if(temp_a11 <= Number.parseFloat(css3_s[34]) && temp_a11 != 0) {
-            css3_s[34] = temp_a11;
-          }else{
-            temp_a11 = css3_s[34];
-          }
-
-          if(temp_y11 <= Number.parseFloat(css3_s[35]) && temp_y11 != 0) {
-            css3_s[35] = temp_y11;
-          }else{
-            temp_y11 = css3_s[35];
-          }
-
-          if(temp_n11 != undefined){
-            css3_sR[33] = temp_n11
-          }
-
-          if(temp_a11 != undefined){
-            css3_sR[34] = temp_a11
-          }
-
-          if(temp_y11 != undefined){
-            css3_sR[35] = temp_y11
-          }
-        }
-        
-        var temp_n12 = 0;
-        var temp_a12 = 0;
-        var temp_y12 = 0;
-
-        css3_sR[36] = css3_s[36] = temp_n12 = "";
-        css3_sR[37] = css3_s[37] = temp_a12 = "";
-        css3_sR[38] = css3_s[38] = temp_y12 = "";
-        for(let a12 in list[p].stats.and_ff){
-          if(list[p].stats.and_ff[a12].match(/n|p|不支持/ig)){
-            list[p].stats.and_ff[a12] = "版本：" + a12 + " 及以下【不支持】"
-            css3_s[36] = a12;
-            css3_s[36] = Number.parseFloat(a12.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.and_ff[a12].match(/a|部分支持/ig)){
-            list[p].stats.and_ff[a12] = "版本：" + a12 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[37] = Number.parseFloat(a12.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.and_ff[a12].match(/y|已支持/ig)){
-            list[p].stats.and_ff[a12] = "版本：" + a12 + " 【已支持】"
-            css3_s[38] = Number.parseFloat(a12.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n12 > Number.parseFloat(css3_s[36]) && temp_n12 != 0) {
-            css3_s[36] = temp_n12;
-          }else{
-            temp_n12 = css3_s[36];
-          }
-
-          if(temp_a12 <= Number.parseFloat(css3_s[37]) && temp_a12 != 0) {
-            css3_s[37] = temp_a12;
-          }else{
-            temp_a12 = css3_s[37];
-          }
-
-          if(temp_y12 <= Number.parseFloat(css3_s[38]) && temp_y12 != 0) {
-            css3_s[38] = temp_y12;
-          }else{
-            temp_y12 = css3_s[38];
-          }
-
-          if(temp_n12 != undefined){
-            css3_sR[36] = temp_n12
-          }
-
-          if(temp_a12 != undefined){
-            css3_sR[37] = temp_a12
-          }
-
-          if(temp_y12 != undefined){
-            css3_sR[38] = temp_y12
-          }
-        }
-        
-        var temp_n13 = 0;
-        var temp_a13 = 0;
-        var temp_y13 = 0;
-
-        css3_sR[39] = css3_s[39] = temp_n13 = "";
-        css3_sR[40] = css3_s[40] = temp_a13 = "";
-        css3_sR[41] = css3_s[41] = temp_y13 = "";
-        for(let a13 in list[p].stats.ie_mob){
-          if(list[p].stats.ie_mob[a13].match(/n|p|不支持/ig)){
-            list[p].stats.ie_mob[a13] = "版本：" + a13 + " 及以下【不支持】"
-            css3_s[39] = a13;
-            css3_s[39] = Number.parseFloat(a13.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.ie_mob[a13].match(/a|部分支持/ig)){
-            list[p].stats.ie_mob[a13] = "版本：" + a13 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[40] = Number.parseFloat(a13.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.ie_mob[a13].match(/y|已支持/ig)){
-            list[p].stats.ie_mob[a13] = "版本：" + a13 + " 【已支持】"
-            css3_s[41] = Number.parseFloat(a13.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n13 > Number.parseFloat(css3_s[39]) && temp_n13 != 0) {
-            css3_s[39] = temp_n13;
-          }else{
-            temp_n13 = css3_s[39];
-          }
-
-          if(temp_a13 <= Number.parseFloat(css3_s[40]) && temp_a13 != 0) {
-            css3_s[40] = temp_a13;
-          }else{
-            temp_a13 = css3_s[40];
-          }
-
-          if(temp_y13 <= Number.parseFloat(css3_s[41]) && temp_y13 != 0) {
-            css3_s[41] = temp_y13;
-          }else{
-            temp_y13 = css3_s[41];
-          }
-
-          if(temp_n13 != undefined){
-            css3_sR[39] = temp_n13
-          }
-
-          if(temp_a13 != undefined){
-            css3_sR[40] = temp_a13
-          }
-
-          if(temp_y13 != undefined){
-            css3_sR[41] = temp_y13
-          }
-        }
-        
-        var temp_n14 = 0;
-        var temp_a14 = 0;
-        var temp_y14 = 0;
-
-        css3_sR[42] = css3_s[42] = temp_n14 = "";
-        css3_sR[43] = css3_s[43] = temp_a14 = "";
-        css3_sR[44] = css3_s[44] = temp_y14 = "";
-        for(let a14 in list[p].stats.and_uc){
-          if(list[p].stats.and_uc[a14].match(/n|p|不支持/ig)){
-            list[p].stats.and_uc[a14] = "版本：" + a14 + " 及以下【不支持】"
-            css3_s[42] = a14;
-            css3_s[42] = Number.parseFloat(a14.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.and_uc[a14].match(/a|部分支持/ig)){
-            list[p].stats.and_uc[a14] = "版本：" + a14 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[43] = Number.parseFloat(a14.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.and_uc[a14].match(/y|已支持/ig)){
-            list[p].stats.and_uc[a14] = "版本：" + a14 + " 【已支持】"
-            css3_s[44] = Number.parseFloat(a14.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n14 > Number.parseFloat(css3_s[42]) && temp_n14 != 0) {
-            css3_s[42] = temp_n14;
-          }else{
-            temp_n14 = css3_s[42];
-          }
-
-          if(temp_a14 <= Number.parseFloat(css3_s[43]) && temp_a14 != 0) {
-            css3_s[43] = temp_a14;
-          }else{
-            temp_a14 = css3_s[43];
-          }
-
-          if(temp_y14 <= Number.parseFloat(css3_s[44]) && temp_y14 != 0) {
-            css3_s[44] = temp_y14;
-          }else{
-            temp_y14 = css3_s[44];
-          }
-
-          if(temp_n14 != undefined){
-            css3_sR[42] = temp_n14
-          }
-
-          if(temp_a14 != undefined){
-            css3_sR[43] = temp_a14
-          }
-
-          if(temp_y14 != undefined){
-            css3_sR[44] = temp_y14
-          }
-        }
-        
-        var temp_n15 = 0;
-        var temp_a15 = 0;
-        var temp_y15 = 0;
-
-        css3_sR[45] = css3_s[45] = temp_n15 = "";
-        css3_sR[46] = css3_s[46] = temp_a15 = "";
-        css3_sR[47] = css3_s[47] = temp_y15 = "";
-        for(let a15 in list[p].stats.samsung){
-          if(list[p].stats.samsung[a15].match(/n|p|不支持/ig)){
-            list[p].stats.samsung[a15] = "版本：" + a15 + " 及以下【不支持】"
-            css3_s[45] = a15;
-            css3_s[45] = Number.parseFloat(a15.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.samsung[a15].match(/a|部分支持/ig)){
-            list[p].stats.samsung[a15] = "版本：" + a15 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[46] = Number.parseFloat(a15.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.samsung[a15].match(/y|已支持/ig)){
-            list[p].stats.samsung[a15] = "版本：" + a15 + " 【已支持】"
-            css3_s[47] = Number.parseFloat(a15.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n15 > Number.parseFloat(css3_s[45]) && temp_n15 != 0) {
-            css3_s[45] = temp_n15;
-          }else{
-            temp_n15 = css3_s[45];
-          }
-
-          if(temp_a15 <= Number.parseFloat(css3_s[46]) && temp_a15 != 0) {
-            css3_s[46] = temp_a15;
-          }else{
-            temp_a15 = css3_s[46];
-          }
-
-          if(temp_y15 <= Number.parseFloat(css3_s[47]) && temp_y15 != 0) {
-            css3_s[47] = temp_y15;
-          }else{
-            temp_y15 = css3_s[47];
-          }
-
-          if(temp_n15 != undefined){
-            css3_sR[45] = temp_n15
-          }
-
-          if(temp_a15 != undefined){
-            css3_sR[46] = temp_a15
-          }
-
-          if(temp_y15 != undefined){
-            css3_sR[47] = temp_y15
-          }
-        }
-        
-        var temp_n16 = 0;
-        var temp_a16 = 0;
-        var temp_y16 = 0;
-
-        css3_sR[48] = css3_s[48] = temp_n16 = "";
-        css3_sR[49] = css3_s[49] = temp_a16 = "";
-        css3_sR[50] = css3_s[50] = temp_y16 = "";
-        for(let a16 in list[p].stats.and_qq){
-          if(list[p].stats.and_qq[a16].match(/n|p|不支持/ig)){
-            list[p].stats.and_qq[a16] = "版本：" + a16 + " 及以下【不支持】"
-            css3_s[48] = a16;
-            css3_s[48] = Number.parseFloat(a16.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.and_qq[a16].match(/a|部分支持/ig)){
-            list[p].stats.and_qq[a16] = "版本：" + a16 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[49] = Number.parseFloat(a16.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.and_qq[a16].match(/y|已支持/ig)){
-            list[p].stats.and_qq[a16] = "版本：" + a16 + " 【已支持】"
-            css3_s[50] = Number.parseFloat(a16.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n16 > Number.parseFloat(css3_s[48]) && temp_n16 != 0) {
-            css3_s[48] = temp_n16;
-          }else{
-            temp_n16 = css3_s[48];
-          }
-
-          if(temp_a16 <= Number.parseFloat(css3_s[49]) && temp_a16 != 0) {
-            css3_s[49] = temp_a16;
-          }else{
-            temp_a16 = css3_s[49];
-          }
-
-          if(temp_y16 <= Number.parseFloat(css3_s[50]) && temp_y16 != 0) {
-            css3_s[50] = temp_y16;
-          }else{
-            temp_y16 = css3_s[50];
-          }
-
-          if(temp_n16 != undefined){
-            css3_sR[48] = temp_n16
-          }
-
-          if(temp_a16 != undefined){
-            css3_sR[49] = temp_a16
-          }
-
-          if(temp_y16 != undefined){
-            css3_sR[50] = temp_y16
-          }
-        }
-        
-        var temp_n17 = 0;
-        var temp_a17 = 0;
-        var temp_y17 = 0;
-
-        css3_sR[51] = css3_s[51] = temp_n17 = "";
-        css3_sR[52] = css3_s[52] = temp_a17 = "";
-        css3_sR[53] = css3_s[53] = temp_y17 = "";
-        for(let a17 in list[p].stats.baidu){
-          if(list[p].stats.baidu[a17].match(/n|p|不支持/ig)){
-            list[p].stats.baidu[a17] = "版本：" + a17 + " 及以下【不支持】"
-            css3_s[51] = a17;
-            css3_s[51] = Number.parseFloat(a17.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.baidu[a17].match(/a|部分支持/ig)){
-            list[p].stats.baidu[a17] = "版本：" + a17 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[52] = Number.parseFloat(a17.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.baidu[a17].match(/y|已支持/ig)){
-            list[p].stats.baidu[a17] = "版本：" + a17 + " 【已支持】"
-            css3_s[53] = Number.parseFloat(a17.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n17 > Number.parseFloat(css3_s[51]) && temp_n17 != 0) {
-            css3_s[51] = temp_n17;
-          }else{
-            temp_n17 = css3_s[51];
-          }
-
-          if(temp_a17 <= Number.parseFloat(css3_s[52]) && temp_a17 != 0) {
-            css3_s[52] = temp_a17;
-          }else{
-            temp_a17 = css3_s[52];
-          }
-
-          if(temp_y17 <= Number.parseFloat(css3_s[53]) && temp_y17 != 0) {
-            css3_s[53] = temp_y17;
-          }else{
-            temp_y17 = css3_s[53];
-          }
-
-          if(temp_n17 != undefined){
-            css3_sR[51] = temp_n17
-          }
-
-          if(temp_a17 != undefined){
-            css3_sR[52] = temp_a17
-          }
-
-          if(temp_y17 != undefined){
-            css3_sR[53] = temp_y17
-          }
-        }
-
+    })
+  },
+
+  showJson: function(findValue) {
+    var that = this
+    wx.getStorageInfo({
+      success: function(res) {
+        let attrDetailArray = [],
+            attrNameArray = [],
+            shareTag = [],
+            findCSS3 = 0
+        pager = 0
+
+        wx.showLoading({
+          title: "加载数据……",
+          mask: true
+        })
         that.setData({
-          ['c3Result['+c3temp+']']: {
-            c3T: c3temp + "、" + list[p].title,
-            c3D: list[p].description,
-            c3K: list[p].keywords,
-            c3N: list[p].notes,
-            c3UA: list[p].usage_perc_a,
-            c3UY: list[p].usage_perc_y,
-            c3Browser: list[p].stats,
-            csBrowser_ieN: css3_sR[0],
-            csBrowser_ieA: css3_sR[1],
-            csBrowser_ieY: css3_sR[2],
-            csBrowser_edgeN: css3_sR[3],
-            csBrowser_edgeA: css3_sR[4],
-            csBrowser_edgeY: css3_sR[5],
-            csBrowser_firefoxN: css3_sR[6],
-            csBrowser_firefoxA: css3_sR[7],
-            csBrowser_firefoxY: css3_sR[8],
-            csBrowser_chromeN: css3_sR[9],
-            csBrowser_chromeA: css3_sR[10],
-            csBrowser_chromeY: css3_sR[11],
-            csBrowser_safariN: css3_sR[12],
-            csBrowser_safariA: css3_sR[13],
-            csBrowser_safariY: css3_sR[14],
-            csBrowser_operaN: css3_sR[15],
-            csBrowser_operaA: css3_sR[16],
-            csBrowser_operaY: css3_sR[17],
-            csBrowser_ios_safN: css3_sR[18],
-            csBrowser_ios_safA: css3_sR[19],
-            csBrowser_ios_safY: css3_sR[20],
-            csBrowser_op_miniN: css3_sR[21],
-            csBrowser_op_miniA: css3_sR[22],
-            csBrowser_op_miniY: css3_sR[23],
-            csBrowser_androidN: css3_sR[24],
-            csBrowser_androidA: css3_sR[25],
-            csBrowser_androidY: css3_sR[26],
-            csBrowser_bbN: css3_sR[27],
-            csBrowser_bbA: css3_sR[28],
-            csBrowser_bbY: css3_sR[29],
-            csBrowser_op_mobN: css3_sR[30],
-            csBrowser_op_mobA: css3_sR[31],
-            csBrowser_op_mobY: css3_sR[32],
-            csBrowser_and_chrN: css3_sR[33],
-            csBrowser_and_chrA: css3_sR[34],
-            csBrowser_and_chrY: css3_sR[35],
-            csBrowser_and_ffN: css3_sR[36],
-            csBrowser_and_ffA: css3_sR[37],
-            csBrowser_and_ffY: css3_sR[38],
-            csBrowser_ie_mobN: css3_sR[39],
-            csBrowser_ie_mobA: css3_sR[40],
-            csBrowser_ie_mobY: css3_sR[41],
-            csBrowser_and_ucN: css3_sR[42],
-            csBrowser_and_ucA: css3_sR[43],
-            csBrowser_and_ucY: css3_sR[44],
-            csBrowser_samsungN: css3_sR[45],
-            csBrowser_samsungA: css3_sR[46],
-            csBrowser_samsungY: css3_sR[47],
-            csBrowser_and_qqN: css3_sR[48],
-            csBrowser_and_qqA: css3_sR[49],
-            csBrowser_and_qqY: css3_sR[50],
-            csBrowser_baiduN: css3_sR[51],
-            csBrowser_baiduA: css3_sR[52],
-            csBrowser_baiduY: css3_sR[53],
-            loadMore: "",
-            loadMoreClass: ""
-          }
+          attrNameArray: [],
+          ___pager: pager
         })
 
-        if(loopNum >= refreshAgain) {
-          wx.showToast({
-            title: '加载前 ' + c3temp + ' 条数据',
-            icon: 'loading',
-            mask: true,
-            duration: 3000
-          }),
-          that.setData({
-            loadMore: "getMoreList",
-            loadMoreClass: "moreListCollapse"
-          }),
-          c3temp = refreshAgain;
-        }
-
-        c3temp++;
-        loopNum++;
-      }
-    }
-
-    if(c3temp == 0){
-      that.setData({
-        findTips404: "findTips404",
-        findTips404Text: "Ta 分享的属性是："
-      })
-    }
-
-        console.log("同步数据，缓存读取成功")
-      }else{
-        wx.request({
-          url: "https://raw.githubusercontent.com/Fyrd/caniuse/master/data.json",
-          data: {},
-          method: 'GET',
-          header: {
-              'content-type': 'application/json'
-          },
-
-          success: function(res) {
-
-            timestamp = res.data.updated;
-            var date = new Date(timestamp * 1000);
-            var formattedDate = date.getFullYear() + "/" + ('0' + (date.getMonth() + 1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) + " " + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
-
-            app.post = res.data.data
-
-            wx.setStorageSync("t", timestamp)
-
-            for(let r in app.post){
-              wx.setStorageSync(r, app.post[r])
-            }
-
-            var storageKeys = wx.getStorageInfoSync()
-      
-            for(let y in storageKeys.keys) {
-              if(storageKeys.keys[y] == "t") {
-                timestamp = wx.getStorageSync(storageKeys.keys[y])
-              }else{
-                list[y] = wx.getStorageSync(storageKeys.keys[y])
-                listKeys[y] = storageKeys.keys[y]
-              }
-            }
+        for(let i = 0, j = 0; i < that.data._jsonTotal; i++){
+          if(that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)) || that.data._attrSearchList[i][3].match(new RegExp(findValue))) {
             
-            wx.showToast({
-              title: '加载完成！',
-              icon: 'success',
-              duration: 1500
-            })
+            attrNameArray.push(that.data._attrSearchList[i][0])
 
+            console.log(that.data._attrSearchList[i][0])
+            shareTag.push(that.data._attrSearchList[i][0])
             that.setData({
-              data: {
-                message: "数据更新时间：" + formattedDate
-              },
-              inputBtn: {
-                focus: true,
-                disabled: false,
-                disabledBtn: true
-              }
+              _getShareTag: shareTag
             })
 
+            let browserTypeArray = []
 
-    that.setData({
-      data: {
-        message: "数据更新时间：" + formattedDate
-      },
-      showTitle: searchKey,
-      css2: [
-        'background-color',
-        'background-image',
-        'background-position (2 params)',
-        'background-repeat (repeat | repeat-x | repeat-y | no-repeat)',
-        'border-collapse (collapse | separate)',
-        'border-color',
-        'border-spacing',
-        'border-style',
-        'bottom',
-        'color',
-        'clear (none | left | right | both)',
-        'display (none | inline | block | list-item)',
-        'float (none | left | right)',
-        'font-family',
-        'font-size',
-        'font-style (normal | italic | oblique)',
-        'font-variant (normal | small-caps)',
-        'font-weight',
-        'height',
-        'left',
-        'line-height',
-        'list-style',
-        'list-style-image',
-        'list-style-position',
-        'margin',
-        'overflow (visible | hidden | scroll | auto)',
-        'padding',
-        'position (static | relative | absolute)',
-        'right',
-        'text-align (left | right | center | justify)',
-        'text-decoration (none | underline | overline | line-through)',
-        'text-indent',
-        'text-transform (capitalize | uppercase | lowercase | none)',
-        'top',
-        'width',
-        'word-spacing',
-        'visibility (visible | hidden)',
-        'z-index'
-      ]
-    })
+            for(var findAttr = 0; findAttr < res.keys.length-1; findAttr++){
+              if(wx.getStorageSync(res.keys[findAttr]).title == that.data._attrSearchList[i][1]) {
 
-    var css3_s = [];
-    var css3_sR = [];
+                attrDetailArray.push(wx.getStorageSync(res.keys[findAttr])) // 搜索后所得的详细内容
 
-    for(let u in that.data.css2){
-      if(that.data.css2[u].match(searchKey)){
-        that.data.css2[u] = that.data.css2[u]
-      }else{
-        that.data.css2[u] = ""
-      }
-
-      that.setData({
-        css2_s: that.data.css2
-      })
-    }
-
-    var c3temp = 0;
-    var c3B = 0;
-    var loopNum = 0;
-
-    refreshAgain += 4;
-
-    for(let p in list) {
-      if(listKeys[p].toLowerCase().match(searchKey) || list[p].title.toLowerCase().match(searchKey) || list[p].keywords.toLowerCase().match(searchKey)|| list[p].description.toLowerCase().match(searchKey)) {
-
-        var temp_n = 0;
-        var temp_a = 0;
-        var temp_y = 0;
-
-        css3_sR[0] = css3_s[0] = temp_n = "";
-        css3_sR[1] = css3_s[1] = temp_a = "";
-        css3_sR[2] = css3_s[2] = temp_y = "";
-
-        for(let a in list[p].stats.ie){
-          if(list[p].stats.ie[a].match(/n|p|不支持/ig)){
-            list[p].stats.ie[a] = "版本：" + a + " 及以下【不支持】"
-            // css3_s[0] = a;
-            css3_s[0] = Number.parseFloat(a.replace(/(\d.*)[-]/ig,0));
-            // console.log(css3_s[0])
-          }else if(list[p].stats.ie[a].match(/a|部分支持/ig)){
-            list[p].stats.ie[a] = "版本：" + a + " 及以下【部分支持，可能需要浏览器前缀】"
-            // css3_s[1] = a;
-            css3_s[1] = Number.parseFloat(a.replace(/[-](\d.*)/ig,".0"));
-            // console.log(list[p].stats.ie[a])
-          }else if(list[p].stats.ie[a].match(/y|已支持/ig)){
-            list[p].stats.ie[a] = "版本：" + a + " 【已支持】"
-            // css3_s[2] = a;
-            css3_s[2] = Number.parseFloat(a.replace(/[-](\d.*)/ig,".0"));
-            // console.log(css3_s[2])
-          }
-
-          if(temp_n > Number.parseFloat(css3_s[0]) && temp_n != 0) {
-            css3_s[0] = temp_n;
-          }else{
-            temp_n = css3_s[0];
-          }
-
-          if(temp_a <= Number.parseFloat(css3_s[1]) && temp_a != 0) {
-            css3_s[1] = temp_a;
-          }else{
-            temp_a = css3_s[1];
-          }
-
-          if(temp_y <= Number.parseFloat(css3_s[2]) && temp_y != 0) {
-            css3_s[2] = temp_y;
-          }else{
-            temp_y = css3_s[2];
-          }
-
-          if(temp_n != undefined){
-            css3_sR[0] = temp_n
-          }
-
-          if(temp_a != undefined){
-            css3_sR[1] = temp_a
-          }
-
-          if(temp_y != undefined){
-            css3_sR[2] = temp_y
-          }
-        }
-
-        var temp_n1 = 0;
-        var temp_a1 = 0;
-        var temp_y1 = 0;     
-
-        css3_sR[3] = css3_s[3] = temp_n1 = "";
-        css3_sR[4] = css3_s[4] = temp_a1 = "";
-        css3_sR[5] = css3_s[5] = temp_y1 = "";       
-        for(let a1 in list[p].stats.edge){
-          if(list[p].stats.edge[a1].match(/n|p|不支持/ig)){
-            list[p].stats.edge[a1] = "版本：" + a1 + " 及以下【不支持】"
-            // css3_s[3] = a1;
-            css3_s[3] = Number.parseFloat(a1.replace(/(\d.*)[-]/ig,0));
-          }else if(list[p].stats.edge[a1].match(/a|部分支持/ig)){
-            list[p].stats.edge[a1] = "版本：" + a1 + " 及以下【部分支持，可能需要浏览器前缀】"
-            // css3_s[4] = a1;
-            css3_s[4] = Number.parseFloat(a1.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.edge[a1].match(/y|已支持/ig)){
-            list[p].stats.edge[a1] = "版本：" + a1 + " 【已支持】"
-            // css3_s[5] = a1;
-            css3_s[5] = Number.parseFloat(a1.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n1 > Number.parseFloat(css3_s[3]) && temp_n1 != 0) {
-            css3_s[3] = temp_n1;
-          }else{
-            temp_n1 = css3_s[3];
-          }
-
-          if(temp_a1 <= Number.parseFloat(css3_s[4]) && temp_a1 != 0) {
-            css3_s[4] = temp_a1;
-          }else{
-            temp_a1 = css3_s[4];
-          }
-
-          if(temp_y1 <= Number.parseFloat(css3_s[5]) && temp_y1 != 0) {
-            css3_s[5] = temp_y1;
-          }else{
-            temp_y1 = css3_s[5];
-          }
-
-          if(temp_n1 != undefined){
-            css3_sR[3] = temp_n1
-          }
-
-          if(temp_a1 != undefined){
-            css3_sR[4] = temp_a1
-          }
-
-          if(temp_y1 != undefined){
-            css3_sR[5] = temp_y1
-          }
-        }
-        
-        var temp_n2 = 0;
-        var temp_a2 = 0;
-        var temp_y2 = 0;
-
-        css3_sR[6] = css3_s[6] = temp_n2 = "";
-        css3_sR[7] = css3_s[7] = temp_a2 = "";
-        css3_sR[8] = css3_s[8] = temp_y2 = "";
-        for(let a2 in list[p].stats.firefox){
-          if(list[p].stats.firefox[a2].match(/n|p|不支持/ig)){
-            list[p].stats.firefox[a2] = "版本：" + a2 + " 及以下【不支持】"
-            // css3_s[6] = a2;
-            css3_s[6] = Number.parseFloat(a2.replace(/(\d.*)[-]/ig,0));
-          }else if(list[p].stats.firefox[a2].match(/a|部分支持/ig)){
-            list[p].stats.firefox[a2] = "版本：" + a2 + " 及以下【部分支持，可能需要浏览器前缀】"
-            // css3_s[7] = a2;
-           // console.log(a2)
-            css3_s[7] = Number.parseFloat(a2.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.firefox[a2].match(/y|已支持/ig)){
-            list[p].stats.firefox[a2] = "版本：" + a2 + " 【已支持】"
-            // css3_s[8] = a2;
-            css3_s[8] = Number.parseFloat(a2.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n2 > css3_s[6] && temp_n2 != 0) {
-            css3_s[6] = temp_n2;
-          }else{
-            temp_n2 = css3_s[6];
-          }
-
-          if(temp_a2 <= Number.parseFloat(css3_s[7]) && temp_a2 != 0) {
-            css3_s[7] = temp_a2;
-          }else{
-            temp_a2 = css3_s[7];
-          }
-
-          if(temp_y2 <= Number.parseFloat(css3_s[8]) && temp_y2 != 0) {
-            css3_s[8] = temp_y2;
-          }else{
-            temp_y2 = css3_s[8];
-          }
-
-          if(temp_n2 != undefined){
-            css3_sR[6] = temp_n2
-          }
-
-          if(temp_a2 != undefined){
-            css3_sR[7] = temp_a2
-          }
-
-          if(temp_y2 != undefined){
-            css3_sR[8] = temp_y2
-          }
-        }
-        
-        var temp_n3 = 0;
-        var temp_a3 = 0;
-        var temp_y3 = 0;
-
-        css3_sR[9] = css3_s[9] = temp_n3 = "";
-        css3_sR[10] = css3_s[10] = temp_a3 = "";
-        css3_sR[11] = css3_s[11] = temp_y3 = "";
-        for(let a3 in list[p].stats.chrome){
-          if(list[p].stats.chrome[a3].match(/n|p|不支持/ig)){
-            list[p].stats.chrome[a3] = "版本：" + a3 + " 及以下【不支持】"
-            // css3_s[9] = a3;
-            css3_s[9] = Number.parseFloat(a3.replace(/(\d.*)[-]/ig,0));
-          }else if(list[p].stats.chrome[a3].match(/a|部分支持/ig)){
-            list[p].stats.chrome[a3] = "版本：" + a3 + " 及以下【部分支持，可能需要浏览器前缀】"
-            // css3_s[10] = a3;
-            css3_s[10] = Number.parseFloat(a3.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.chrome[a3].match(/y|已支持/ig)){
-            list[p].stats.chrome[a3] = "版本：" + a3 + " 【已支持】"
-            // css3_s[11] = a3;
-            css3_s[11] = Number.parseFloat(a3.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n3 > css3_s[9] && temp_n3 != 0) {
-            css3_s[9] = temp_n3;
-          }else{
-            temp_n3 = css3_s[9];
-          }
-
-          if(temp_a3 <= Number.parseFloat(css3_s[10]) && temp_a3 != 0) {
-            css3_s[10] = temp_a3;
-          }else{
-            temp_a3 = css3_s[10];
-          }
-
-          if(temp_y3 <= Number.parseFloat(css3_s[11]) && temp_y3 != 0) {
-            css3_s[11] = temp_y3;
-          }else{
-            temp_y3 = css3_s[11];
-          }
-
-          if(temp_n3 != undefined){
-            css3_sR[9] = temp_n3
-          }
-
-          if(temp_a3 != undefined){
-            css3_sR[10] = temp_a3
-          }
-
-          if(temp_y3 != undefined){
-            css3_sR[11] = temp_y3
-          }
-        }
-        
-        var temp_n4 = 0;
-        var temp_a4 = 0;
-        var temp_y4 = 0;
-
-        css3_sR[12] = css3_s[12] = temp_n4 = "";
-        css3_sR[13] = css3_s[13] = temp_a4 = "";
-        css3_sR[14] = css3_s[14] = temp_y4 = "";
-        for(let a4 in list[p].stats.safari){
-          if(list[p].stats.safari[a4].match(/n|p|不支持/ig)){
-            list[p].stats.safari[a4] = "版本：" + a4 + " 及以下【不支持】"
-            // css3_s[12] = a4;
-            css3_s[12] = Number.parseFloat(a4.replace(/(\d.*)[-]/ig,0));
-            Number.parseFloat(a4)?css3_s[12] = a4:css3_s[12] = 1
-          }else if(list[p].stats.safari[a4].match(/a|部分支持/ig)){
-            list[p].stats.safari[a4] = "版本：" + a4 + " 及以下【部分支持，可能需要浏览器前缀】"
-            Number.parseFloat(a4)?css3_s[13] = a4:css3_s[13] = 1
-            // css3_s[13] = a4;
-            css3_s[13] = Number.parseFloat(a4.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.safari[a4].match(/y|已支持/ig)){
-            list[p].stats.safari[a4] = "版本：" + a4 + " 【已支持】"
-            Number.parseFloat(a4)?css3_s[14] = a4:css3_s[14] = 10000
-          }
-
-          if(temp_n4 > Number.parseFloat(css3_s[12]) && temp_n4 != 0) {
-            css3_s[12] = temp_n4;
-          }else{
-            temp_n4 = css3_s[12];
-          }
-
-          if(temp_a4 <= Number.parseFloat(css3_s[13]) && temp_a4 != 0) {
-            css3_s[13] = temp_a4;
-          }else{
-            temp_a4 = css3_s[13];
-          }
-
-          if(temp_y4 <= Number.parseFloat(css3_s[14]) && temp_y4 != 0) {
-            css3_s[14] = temp_y4;
-          }else{
-            temp_y4 = css3_s[14];
-          }
-            
-          if(temp_n4 != undefined){
-            css3_sR[12] = temp_n4
-          }
-
-          if(temp_a4 != undefined){
-            css3_sR[13] = temp_a4
-          }
-
-          if(temp_y4 != undefined){
-            css3_sR[14] = temp_y4
-          }
-        }
-        
-        var temp_n5 = 0;
-        var temp_a5 = 0;
-        var temp_y5 = 0;
-
-        css3_sR[15] = css3_s[15] = temp_n5 = "";
-        css3_sR[16] = css3_s[16] = temp_a5 = "";
-        css3_sR[17] = css3_s[17] = temp_y5 = "";
-        for(let a5 in list[p].stats.opera){
-          if(list[p].stats.opera[a5].match(/n|p|不支持/ig)){
-            list[p].stats.opera[a5] = "版本：" + a5 + " 及以下【不支持】"
-            css3_s[15] = a5;
-          }else if(list[p].stats.opera[a5].match(/a|部分支持/ig)){
-            list[p].stats.opera[a5] = "版本：" + a5 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[16] = a5;
-          }else if(list[p].stats.opera[a5].match(/y|已支持/ig)){
-            list[p].stats.opera[a5] = "版本：" + a5 + " 【已支持】"
-            css3_s[17] = a5;
-          }
-
-          if(temp_n5 > Number.parseFloat(css3_s[15]) && temp_n5 != 0) {
-            css3_s[15] = temp_n5;
-          }else{
-            temp_n5 = css3_s[15];
-          }
-
-          if(temp_a5 <= Number.parseFloat(css3_s[16]) && temp_a5 != 0) {
-            css3_s[16] = temp_a5;
-          }else{
-            temp_a5 = css3_s[16];
-          }
-
-          if(temp_y5 <= Number.parseFloat(css3_s[17]) && temp_y5 != 0) {
-            css3_s[17] = temp_y5;
-          }else{
-            temp_y5 = css3_s[17];
-          }
-
-            
-          if(temp_n5 != undefined){
-            css3_sR[15] = temp_n5
-          }
-
-          if(temp_a5 != undefined){
-            css3_sR[16] = temp_a5
-          }
-
-          if(temp_y5 != undefined){
-            css3_sR[17] = temp_y5
-          }
-        }
-        
-        var temp_n6 = 0;
-        var temp_a6 = 0;
-        var temp_y6 = 0;
-
-        css3_sR[18] = css3_s[18] = temp_n6 = "";
-        css3_sR[19] = css3_s[19] = temp_a6 = "";
-        css3_sR[20] = css3_s[20] = temp_y6 = "";
-        for(let a6 in list[p].stats.ios_saf){
-          if(list[p].stats.ios_saf[a6].match(/n|p|不支持/ig)){
-            list[p].stats.ios_saf[a6] = "版本：" + a6 + " 及以下【不支持】"
-            css3_s[18] = a6;
-            css3_s[18] = Number.parseFloat(a6.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.ios_saf[a6].match(/a|部分支持/ig)){
-            list[p].stats.ios_saf[a6] = "版本：" + a6 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[19] = Number.parseFloat(a6.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.ios_saf[a6].match(/y|已支持/ig)){
-            list[p].stats.ios_saf[a6] = "版本：" + a6 + " 【已支持】"
-            css3_s[20] = Number.parseFloat(a6.replace(/[-](\d.*)/ig,".0"));
-          }
-
-
-
-          if(temp_n6 > Number.parseFloat(css3_s[18]) && temp_n6 != 0) {
-            css3_s[18] = temp_n6;
-          }else{
-            temp_n6 = css3_s[18];
-          }
-
-          if(temp_a6 <= Number.parseFloat(css3_s[19]) && temp_a6 != 0) {
-            css3_s[19] = temp_a6;
-          }else{
-            temp_a6 = css3_s[19];
-          }
-
-          if(temp_y6 <= Number.parseFloat(css3_s[20]) && temp_y6 != 0) {
-            css3_s[20] = temp_y6;
-          }else{
-            temp_y6 = css3_s[20];
-          }
-
-            
-          if(temp_n6 != undefined){
-            css3_sR[18] = temp_n6
-          }
-
-          if(temp_a6 != undefined){
-            css3_sR[19] = temp_a6
-          }
-
-          if(temp_y6 != undefined){
-            css3_sR[20] = temp_y6
-          }
-        }
-        
-        var temp_n7 = 0;
-        var temp_a7 = 0;
-        var temp_y7 = 0;
-
-        css3_sR[21] = css3_s[21] = temp_n7 = "";
-        css3_sR[22] = css3_s[22] = temp_a7 = "";
-        css3_sR[23] = css3_s[23] = temp_y7 = "";
-        for(let a7 in list[p].stats.op_mini){
-          if(a7.match(/all/ig)){
-            if(list[p].stats.op_mini[a7].match(/n|p|不支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 及以下【不支持】"
-              css3_sR[21] = css3_s[21] = a7;
-            }else if(list[p].stats.op_mini[a7].match(/a|部分支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 及以下【部分支持，可能需要浏览器前缀】"
-              css3_sR[22] = css3_s[22] = a7;
-            }else if(list[p].stats.op_mini[a7].match(/y|已支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 【已支持】"
-              css3_sR[23] = css3_s[23] = a7;
-              // console.log(css3_s[23])
-            }
-          }else{
-            if(list[p].stats.op_mini[a7].match(/n|p|不支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 及以下【不支持】"
-              css3_s[21] = a7;
-              css3_s[21] = Number.parseFloat(a7.replace(/(\d.*)[-]/ig,0))
-            }else if(list[p].stats.op_mini[a7].match(/a|部分支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 及以下【部分支持，可能需要浏览器前缀】"
-              css3_s[22] = Number.parseFloat(a7.replace(/[-](\d.*)/ig,".0"));
-              if(css3_s[22].match(/all/ig)){
-                css3_s[22] = a7
-              }
-            }else if(list[p].stats.op_mini[a7].match(/y|已支持/ig)){
-              list[p].stats.op_mini[a7] = "版本：" + a7 + " 【已支持】"
-              css3_s[23] = Number.parseFloat(a7.replace(/[-](\d.*)/ig,".0"));
-              if(css3_s[23].match(/all/ig)){
-                css3_s[23] = a7
+                let compatibility = []
+                for(let type in attrDetailArray[j].stats) {
+                  let brwoserVerY = 0,
+                      brwoserVerN = 0,
+                      brwoserVerU = 0,
+                      brwoserVerA = 0
+                  for(let ver in attrDetailArray[j].stats[type]) {
+                    compatibility = attrDetailArray[j].stats[type][ver] // 兼容性列表
+                    if(compatibility.match(/y/ig)){
+                      brwoserVerY = that.judgeVerThan(brwoserVerY,ver)
+                    }else if(compatibility.match(/a|p/ig)) {
+                      brwoserVerA = that.judgeVer(brwoserVerA,ver)
+                    }else if(compatibility.match(/u/ig)) {
+                      brwoserVerU = that.judgeVer(brwoserVerU,ver)
+                    }else if(compatibility.match(/n/ig)) {
+                      brwoserVerN = that.judgeVer(brwoserVerN,ver)
+                    }
+                  }
+                  browserTypeArray.push([type,brwoserVerY,brwoserVerA,brwoserVerU,brwoserVerN])
+                }
+                attrNameArray.push([
+                  (j + 1) + "、" + attrDetailArray[j].title,
+                  attrDetailArray[j].description,
+                  "浏览器支持率：" + attrDetailArray[j].usage_perc_y,
+                  "部分支持情况： "+attrDetailArray[j].usage_perc_a
+                ])
+                attrNameArray.push(browserTypeArray)
+                j++
+                findCSS3++
               }
             }
-          }
-
-          if(temp_n7 > Number.parseFloat(css3_s[21]) && temp_n7 != 0) {
-            css3_s[21] = temp_n7;
-          }else{
-            temp_n7 = css3_s[21];
-          }
-
-          if(temp_a7 <= Number.parseFloat(css3_s[22]) && temp_a7 != 0) {
-            css3_s[22] = temp_a7;
-          }else{
-            temp_a7 = css3_s[22];
-          }
-
-          if(temp_y7 <= Number.parseFloat(css3_s[23]) && temp_y7 != 0) {
-            css3_s[23] = temp_y7;
-            console.log(list[p].stats.op_mini)
-          }else{
-            temp_y7 = css3_s[23];
-          }
-
-            
-          if(temp_n7 != undefined){
-            css3_sR[21] = temp_n7
-          }
-
-          if(temp_a7 != undefined){
-            css3_sR[22] = temp_a7
-          }
-
-          if(temp_y7 != undefined){
-            css3_sR[23] = temp_y7
-          }
-        }
-        
-        var temp_n8 = 0;
-        var temp_a8 = 0;
-        var temp_y8 = 0;
-
-        css3_sR[23] = css3_s[23] = temp_n8 = "";
-        css3_sR[25] = css3_s[25] = temp_a8 = "";
-        css3_sR[26] = css3_s[26] = temp_y8 = "";
-        for(let a8 in list[p].stats.android){
-          if(list[p].stats.android[a8].match(/n|p|不支持/ig)){
-            list[p].stats.android[a8] = "版本：" + a8 + " 及以下【不支持】"
-            css3_s[24] = a8;
-            css3_s[24] = Number.parseFloat(a8.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.android[a8].match(/a|部分支持/ig)){
-            list[p].stats.android[a8] = "版本：" + a8 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[25] = Number.parseFloat(a8.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.android[a8].match(/y|已支持/ig)){
-            list[p].stats.android[a8] = "版本：" + a8 + " 【已支持】"
-            css3_s[26] = Number.parseFloat(a8.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n8 > Number.parseFloat(css3_s[24]) && temp_n8 != 0) {
-            css3_s[24] = temp_n8;
-          }else{
-            temp_n8 = css3_s[24];
-          }
-
-          if(temp_a8 <= Number.parseFloat(css3_s[25]) && temp_a8 != 0) {
-            css3_s[25] = temp_a8;
-          }else{
-            temp_a8 = css3_s[25];
-          }
-
-          if(temp_y8 <= Number.parseFloat(css3_s[26]) && temp_y8 != 0) {
-            css3_s[26] = temp_y8;
-          }else{
-            temp_y8 = css3_s[26];
-          }
-
-          if(temp_n8 != undefined){
-            css3_sR[24] = temp_n8
-          }
-
-          if(temp_a8 != undefined){
-            css3_sR[25] = temp_a8
-          }
-
-          if(temp_y8 != undefined){
-            css3_sR[26] = temp_y8
-          }
-        }
-        
-        var temp_n9 = 0;
-        var temp_a9 = 0;
-        var temp_y9 = 0;
-
-        css3_sR[27] = css3_s[27] = temp_n9 = "";
-        css3_sR[28] = css3_s[28] = temp_a9 = "";
-        css3_sR[29] = css3_s[29] = temp_y9 = "";
-        for(let a9 in list[p].stats.bb){
-          if(list[p].stats.bb[a9].match(/n|p|不支持/ig)){
-            list[p].stats.bb[a9] = "版本：" + a9 + " 及以下【不支持】"
-            css3_s[27] = a9;
-            css3_s[27] = Number.parseFloat(a9.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.bb[a9].match(/a|部分支持/ig)){
-            list[p].stats.bb[a9] = "版本：" + a9 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[28] = Number.parseFloat(a9.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.bb[a9].match(/y|已支持/ig)){
-            list[p].stats.bb[a9] = "版本：" + a9 + " 【已支持】"
-            css3_s[29] = Number.parseFloat(a9.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n9 > Number.parseFloat(css3_s[27]) && temp_n9 != 0) {
-            css3_s[27] = temp_n9;
-          }else{
-            temp_n9 = css3_s[27];
-          }
-
-          if(temp_a9 <= Number.parseFloat(css3_s[28]) && temp_a9 != 0) {
-            css3_s[28] = temp_a9;
-          }else{
-            temp_a9 = css3_s[28];
-          }
-
-          if(temp_y9 <= Number.parseFloat(css3_s[29]) && temp_y9 != 0) {
-            css3_s[29] = temp_y9;
-          }else{
-            temp_y9 = css3_s[29];
-          }
-
-          if(temp_n9 != undefined){
-            css3_sR[27] = temp_n9
-          }
-
-          if(temp_a9 != undefined){
-            css3_sR[28] = temp_a9
-          }
-
-          if(temp_y9 != undefined){
-            css3_sR[29] = temp_y9
-          }
-        }
-        
-        var temp_n10 = 0;
-        var temp_a10 = 0;
-        var temp_y10 = 0;
-
-        css3_sR[30] = css3_s[30] = temp_n10 = "";
-        css3_sR[31] = css3_s[31] = temp_a10 = "";
-        css3_sR[32] = css3_s[32] = temp_y10 = "";
-        for(let a10 in list[p].stats.op_mob){
-          if(list[p].stats.op_mob[a10].match(/n|p|不支持/ig)){
-            list[p].stats.op_mob[a10] = "版本：" + a10 + " 及以下【不支持】"
-            css3_s[30] = a10;
-            css3_s[30] = Number.parseFloat(a10.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.op_mob[a10].match(/a|部分支持/ig)){
-            list[p].stats.op_mob[a10] = "版本：" + a10 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[31] = Number.parseFloat(a10.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.op_mob[a10].match(/y|已支持/ig)){
-            list[p].stats.op_mob[a10] = "版本：" + a10 + " 【已支持】"
-            css3_s[32] = Number.parseFloat(a10.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n10 > Number.parseFloat(css3_s[30]) && temp_n10 != 0) {
-            css3_s[30] = temp_n10;
-          }else{
-            temp_n10 = css3_s[30];
-          }
-
-          if(temp_a10 <= Number.parseFloat(css3_s[31]) && temp_a10 != 0) {
-            css3_s[31] = temp_a10;
-          }else{
-            temp_a10 = css3_s[31];
-          }
-
-          if(temp_y10 <= Number.parseFloat(css3_s[32]) && temp_y10 != 0) {
-            css3_s[32] = temp_y10;
-          }else{
-            temp_y10 = css3_s[32];
-          }
-
-          if(temp_n10 != undefined){
-            css3_sR[30] = temp_n10
-          }
-
-          if(temp_a10 != undefined){
-            css3_sR[31] = temp_a10
-          }
-
-          if(temp_y10 != undefined){
-            css3_sR[32] = temp_y10
-          }
-        }
-        
-        var temp_n11 = 0;
-        var temp_a11 = 0;
-        var temp_y11 = 0;
-
-        css3_sR[33] = css3_s[33] = temp_n11 = "";
-        css3_sR[34] = css3_s[34] = temp_a11 = "";
-        css3_sR[35] = css3_s[35] = temp_y11 = "";
-        for(let a11 in list[p].stats.and_chr){
-          if(list[p].stats.and_chr[a11].match(/n|p|不支持/ig)){
-            list[p].stats.and_chr[a11] = "版本：" + a11 + " 及以下【不支持】"
-            css3_s[33] = a11;
-            css3_s[33] = Number.parseFloat(a11.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.and_chr[a11].match(/a|部分支持/ig)){
-            list[p].stats.and_chr[a11] = "版本：" + a11 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[34] = Number.parseFloat(a11.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.and_chr[a11].match(/y|已支持/ig)){
-            list[p].stats.and_chr[a11] = "版本：" + a11 + " 【已支持】"
-            css3_s[35] = Number.parseFloat(a11.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n11 > Number.parseFloat(css3_s[33]) && temp_n11 != 0) {
-            css3_s[33] = temp_n11;
-          }else{
-            temp_n11 = css3_s[33];
-          }
-
-          if(temp_a11 <= Number.parseFloat(css3_s[34]) && temp_a11 != 0) {
-            css3_s[34] = temp_a11;
-          }else{
-            temp_a11 = css3_s[34];
-          }
-
-          if(temp_y11 <= Number.parseFloat(css3_s[35]) && temp_y11 != 0) {
-            css3_s[35] = temp_y11;
-          }else{
-            temp_y11 = css3_s[35];
-          }
-
-          if(temp_n11 != undefined){
-            css3_sR[33] = temp_n11
-          }
-
-          if(temp_a11 != undefined){
-            css3_sR[34] = temp_a11
-          }
-
-          if(temp_y11 != undefined){
-            css3_sR[35] = temp_y11
-          }
-        }
-        
-        var temp_n12 = 0;
-        var temp_a12 = 0;
-        var temp_y12 = 0;
-
-        css3_sR[36] = css3_s[36] = temp_n12 = "";
-        css3_sR[37] = css3_s[37] = temp_a12 = "";
-        css3_sR[38] = css3_s[38] = temp_y12 = "";
-        for(let a12 in list[p].stats.and_ff){
-          if(list[p].stats.and_ff[a12].match(/n|p|不支持/ig)){
-            list[p].stats.and_ff[a12] = "版本：" + a12 + " 及以下【不支持】"
-            css3_s[36] = a12;
-            css3_s[36] = Number.parseFloat(a12.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.and_ff[a12].match(/a|部分支持/ig)){
-            list[p].stats.and_ff[a12] = "版本：" + a12 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[37] = Number.parseFloat(a12.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.and_ff[a12].match(/y|已支持/ig)){
-            list[p].stats.and_ff[a12] = "版本：" + a12 + " 【已支持】"
-            css3_s[38] = Number.parseFloat(a12.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n12 > Number.parseFloat(css3_s[36]) && temp_n12 != 0) {
-            css3_s[36] = temp_n12;
-          }else{
-            temp_n12 = css3_s[36];
-          }
-
-          if(temp_a12 <= Number.parseFloat(css3_s[37]) && temp_a12 != 0) {
-            css3_s[37] = temp_a12;
-          }else{
-            temp_a12 = css3_s[37];
-          }
-
-          if(temp_y12 <= Number.parseFloat(css3_s[38]) && temp_y12 != 0) {
-            css3_s[38] = temp_y12;
-          }else{
-            temp_y12 = css3_s[38];
-          }
-
-          if(temp_n12 != undefined){
-            css3_sR[36] = temp_n12
-          }
-
-          if(temp_a12 != undefined){
-            css3_sR[37] = temp_a12
-          }
-
-          if(temp_y12 != undefined){
-            css3_sR[38] = temp_y12
-          }
-        }
-        
-        var temp_n13 = 0;
-        var temp_a13 = 0;
-        var temp_y13 = 0;
-
-        css3_sR[39] = css3_s[39] = temp_n13 = "";
-        css3_sR[40] = css3_s[40] = temp_a13 = "";
-        css3_sR[41] = css3_s[41] = temp_y13 = "";
-        for(let a13 in list[p].stats.ie_mob){
-          if(list[p].stats.ie_mob[a13].match(/n|p|不支持/ig)){
-            list[p].stats.ie_mob[a13] = "版本：" + a13 + " 及以下【不支持】"
-            css3_s[39] = a13;
-            css3_s[39] = Number.parseFloat(a13.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.ie_mob[a13].match(/a|部分支持/ig)){
-            list[p].stats.ie_mob[a13] = "版本：" + a13 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[40] = Number.parseFloat(a13.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.ie_mob[a13].match(/y|已支持/ig)){
-            list[p].stats.ie_mob[a13] = "版本：" + a13 + " 【已支持】"
-            css3_s[41] = Number.parseFloat(a13.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n13 > Number.parseFloat(css3_s[39]) && temp_n13 != 0) {
-            css3_s[39] = temp_n13;
-          }else{
-            temp_n13 = css3_s[39];
-          }
-
-          if(temp_a13 <= Number.parseFloat(css3_s[40]) && temp_a13 != 0) {
-            css3_s[40] = temp_a13;
-          }else{
-            temp_a13 = css3_s[40];
-          }
-
-          if(temp_y13 <= Number.parseFloat(css3_s[41]) && temp_y13 != 0) {
-            css3_s[41] = temp_y13;
-          }else{
-            temp_y13 = css3_s[41];
-          }
-
-          if(temp_n13 != undefined){
-            css3_sR[39] = temp_n13
-          }
-
-          if(temp_a13 != undefined){
-            css3_sR[40] = temp_a13
-          }
-
-          if(temp_y13 != undefined){
-            css3_sR[41] = temp_y13
-          }
-        }
-        
-        var temp_n14 = 0;
-        var temp_a14 = 0;
-        var temp_y14 = 0;
-
-        css3_sR[42] = css3_s[42] = temp_n14 = "";
-        css3_sR[43] = css3_s[43] = temp_a14 = "";
-        css3_sR[44] = css3_s[44] = temp_y14 = "";
-        for(let a14 in list[p].stats.and_uc){
-          if(list[p].stats.and_uc[a14].match(/n|p|不支持/ig)){
-            list[p].stats.and_uc[a14] = "版本：" + a14 + " 及以下【不支持】"
-            css3_s[42] = a14;
-            css3_s[42] = Number.parseFloat(a14.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.and_uc[a14].match(/a|部分支持/ig)){
-            list[p].stats.and_uc[a14] = "版本：" + a14 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[43] = Number.parseFloat(a14.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.and_uc[a14].match(/y|已支持/ig)){
-            list[p].stats.and_uc[a14] = "版本：" + a14 + " 【已支持】"
-            css3_s[44] = Number.parseFloat(a14.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n14 > Number.parseFloat(css3_s[42]) && temp_n14 != 0) {
-            css3_s[42] = temp_n14;
-          }else{
-            temp_n14 = css3_s[42];
-          }
-
-          if(temp_a14 <= Number.parseFloat(css3_s[43]) && temp_a14 != 0) {
-            css3_s[43] = temp_a14;
-          }else{
-            temp_a14 = css3_s[43];
-          }
-
-          if(temp_y14 <= Number.parseFloat(css3_s[44]) && temp_y14 != 0) {
-            css3_s[44] = temp_y14;
-          }else{
-            temp_y14 = css3_s[44];
-          }
-
-          if(temp_n14 != undefined){
-            css3_sR[42] = temp_n14
-          }
-
-          if(temp_a14 != undefined){
-            css3_sR[43] = temp_a14
-          }
-
-          if(temp_y14 != undefined){
-            css3_sR[44] = temp_y14
-          }
-        }
-        
-        var temp_n15 = 0;
-        var temp_a15 = 0;
-        var temp_y15 = 0;
-
-        css3_sR[45] = css3_s[45] = temp_n15 = "";
-        css3_sR[46] = css3_s[46] = temp_a15 = "";
-        css3_sR[47] = css3_s[47] = temp_y15 = "";
-        for(let a15 in list[p].stats.samsung){
-          if(list[p].stats.samsung[a15].match(/n|p|不支持/ig)){
-            list[p].stats.samsung[a15] = "版本：" + a15 + " 及以下【不支持】"
-            css3_s[45] = a15;
-            css3_s[45] = Number.parseFloat(a15.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.samsung[a15].match(/a|部分支持/ig)){
-            list[p].stats.samsung[a15] = "版本：" + a15 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[46] = Number.parseFloat(a15.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.samsung[a15].match(/y|已支持/ig)){
-            list[p].stats.samsung[a15] = "版本：" + a15 + " 【已支持】"
-            css3_s[47] = Number.parseFloat(a15.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n15 > Number.parseFloat(css3_s[45]) && temp_n15 != 0) {
-            css3_s[45] = temp_n15;
-          }else{
-            temp_n15 = css3_s[45];
-          }
-
-          if(temp_a15 <= Number.parseFloat(css3_s[46]) && temp_a15 != 0) {
-            css3_s[46] = temp_a15;
-          }else{
-            temp_a15 = css3_s[46];
-          }
-
-          if(temp_y15 <= Number.parseFloat(css3_s[47]) && temp_y15 != 0) {
-            css3_s[47] = temp_y15;
-          }else{
-            temp_y15 = css3_s[47];
-          }
-
-          if(temp_n15 != undefined){
-            css3_sR[45] = temp_n15
-          }
-
-          if(temp_a15 != undefined){
-            css3_sR[46] = temp_a15
-          }
-
-          if(temp_y15 != undefined){
-            css3_sR[47] = temp_y15
-          }
-        }
-        
-        var temp_n16 = 0;
-        var temp_a16 = 0;
-        var temp_y16 = 0;
-
-        css3_sR[48] = css3_s[48] = temp_n16 = "";
-        css3_sR[49] = css3_s[49] = temp_a16 = "";
-        css3_sR[50] = css3_s[50] = temp_y16 = "";
-        for(let a16 in list[p].stats.and_qq){
-          if(list[p].stats.and_qq[a16].match(/n|p|不支持/ig)){
-            list[p].stats.and_qq[a16] = "版本：" + a16 + " 及以下【不支持】"
-            css3_s[48] = a16;
-            css3_s[48] = Number.parseFloat(a16.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.and_qq[a16].match(/a|部分支持/ig)){
-            list[p].stats.and_qq[a16] = "版本：" + a16 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[49] = Number.parseFloat(a16.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.and_qq[a16].match(/y|已支持/ig)){
-            list[p].stats.and_qq[a16] = "版本：" + a16 + " 【已支持】"
-            css3_s[50] = Number.parseFloat(a16.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n16 > Number.parseFloat(css3_s[48]) && temp_n16 != 0) {
-            css3_s[48] = temp_n16;
-          }else{
-            temp_n16 = css3_s[48];
-          }
-
-          if(temp_a16 <= Number.parseFloat(css3_s[49]) && temp_a16 != 0) {
-            css3_s[49] = temp_a16;
-          }else{
-            temp_a16 = css3_s[49];
-          }
-
-          if(temp_y16 <= Number.parseFloat(css3_s[50]) && temp_y16 != 0) {
-            css3_s[50] = temp_y16;
-          }else{
-            temp_y16 = css3_s[50];
-          }
-
-          if(temp_n16 != undefined){
-            css3_sR[48] = temp_n16
-          }
-
-          if(temp_a16 != undefined){
-            css3_sR[49] = temp_a16
-          }
-
-          if(temp_y16 != undefined){
-            css3_sR[50] = temp_y16
-          }
-        }
-        
-        var temp_n17 = 0;
-        var temp_a17 = 0;
-        var temp_y17 = 0;
-
-        css3_sR[51] = css3_s[51] = temp_n17 = "";
-        css3_sR[52] = css3_s[52] = temp_a17 = "";
-        css3_sR[53] = css3_s[53] = temp_y17 = "";
-        for(let a17 in list[p].stats.baidu){
-          if(list[p].stats.baidu[a17].match(/n|p|不支持/ig)){
-            list[p].stats.baidu[a17] = "版本：" + a17 + " 及以下【不支持】"
-            css3_s[51] = a17;
-            css3_s[51] = Number.parseFloat(a17.replace(/(\d.*)[-]/ig,0))
-          }else if(list[p].stats.baidu[a17].match(/a|部分支持/ig)){
-            list[p].stats.baidu[a17] = "版本：" + a17 + " 及以下【部分支持，可能需要浏览器前缀】"
-            css3_s[52] = Number.parseFloat(a17.replace(/[-](\d.*)/ig,".0"));
-          }else if(list[p].stats.baidu[a17].match(/y|已支持/ig)){
-            list[p].stats.baidu[a17] = "版本：" + a17 + " 【已支持】"
-            css3_s[53] = Number.parseFloat(a17.replace(/[-](\d.*)/ig,".0"));
-          }
-
-          if(temp_n17 > Number.parseFloat(css3_s[51]) && temp_n17 != 0) {
-            css3_s[51] = temp_n17;
-          }else{
-            temp_n17 = css3_s[51];
-          }
-
-          if(temp_a17 <= Number.parseFloat(css3_s[52]) && temp_a17 != 0) {
-            css3_s[52] = temp_a17;
-          }else{
-            temp_a17 = css3_s[52];
-          }
-
-          if(temp_y17 <= Number.parseFloat(css3_s[53]) && temp_y17 != 0) {
-            css3_s[53] = temp_y17;
-          }else{
-            temp_y17 = css3_s[53];
-          }
-
-          if(temp_n17 != undefined){
-            css3_sR[51] = temp_n17
-          }
-
-          if(temp_a17 != undefined){
-            css3_sR[52] = temp_a17
-          }
-
-          if(temp_y17 != undefined){
-            css3_sR[53] = temp_y17
           }
         }
 
         that.setData({
-          ['c3Result['+c3temp+']']: {
-            c3T: c3temp + "、" + list[p].title,
-            c3D: list[p].description,
-            c3K: list[p].keywords,
-            c3N: list[p].notes,
-            c3UA: list[p].usage_perc_a,
-            c3UY: list[p].usage_perc_y,
-            c3Browser: list[p].stats,
-            csBrowser_ieN: css3_sR[0],
-            csBrowser_ieA: css3_sR[1],
-            csBrowser_ieY: css3_sR[2],
-            csBrowser_edgeN: css3_sR[3],
-            csBrowser_edgeA: css3_sR[4],
-            csBrowser_edgeY: css3_sR[5],
-            csBrowser_firefoxN: css3_sR[6],
-            csBrowser_firefoxA: css3_sR[7],
-            csBrowser_firefoxY: css3_sR[8],
-            csBrowser_chromeN: css3_sR[9],
-            csBrowser_chromeA: css3_sR[10],
-            csBrowser_chromeY: css3_sR[11],
-            csBrowser_safariN: css3_sR[12],
-            csBrowser_safariA: css3_sR[13],
-            csBrowser_safariY: css3_sR[14],
-            csBrowser_operaN: css3_sR[15],
-            csBrowser_operaA: css3_sR[16],
-            csBrowser_operaY: css3_sR[17],
-            csBrowser_ios_safN: css3_sR[18],
-            csBrowser_ios_safA: css3_sR[19],
-            csBrowser_ios_safY: css3_sR[20],
-            csBrowser_op_miniN: css3_sR[21],
-            csBrowser_op_miniA: css3_sR[22],
-            csBrowser_op_miniY: css3_sR[23],
-            csBrowser_androidN: css3_sR[24],
-            csBrowser_androidA: css3_sR[25],
-            csBrowser_androidY: css3_sR[26],
-            csBrowser_bbN: css3_sR[27],
-            csBrowser_bbA: css3_sR[28],
-            csBrowser_bbY: css3_sR[29],
-            csBrowser_op_mobN: css3_sR[30],
-            csBrowser_op_mobA: css3_sR[31],
-            csBrowser_op_mobY: css3_sR[32],
-            csBrowser_and_chrN: css3_sR[33],
-            csBrowser_and_chrA: css3_sR[34],
-            csBrowser_and_chrY: css3_sR[35],
-            csBrowser_and_ffN: css3_sR[36],
-            csBrowser_and_ffA: css3_sR[37],
-            csBrowser_and_ffY: css3_sR[38],
-            csBrowser_ie_mobN: css3_sR[39],
-            csBrowser_ie_mobA: css3_sR[40],
-            csBrowser_ie_mobY: css3_sR[41],
-            csBrowser_and_ucN: css3_sR[42],
-            csBrowser_and_ucA: css3_sR[43],
-            csBrowser_and_ucY: css3_sR[44],
-            csBrowser_samsungN: css3_sR[45],
-            csBrowser_samsungA: css3_sR[46],
-            csBrowser_samsungY: css3_sR[47],
-            csBrowser_and_qqN: css3_sR[48],
-            csBrowser_and_qqA: css3_sR[49],
-            csBrowser_and_qqY: css3_sR[50],
-            csBrowser_baiduN: css3_sR[51],
-            csBrowser_baiduA: css3_sR[52],
-            csBrowser_baiduY: css3_sR[53],
-            loadMore: "",
-            loadMoreClass: ""
-          }
+          attrNameArray, // 获取最终筛选后 json 的列表信息
+          inputValue: findValue,
+          _listNumber: findCSS3*3,
+          ___pager: pager,
+          _listShowNumber: 0,
+          __showEnd: ""
         })
 
-        if(loopNum >= refreshAgain) {
+        // var reachBottom = that.onReachBottom();        
+
+        wx.hideLoading()
+
+        if(findCSS3 > 9){
+          wx.showModal({
+            title: '数据过多',
+            content: '目前找到的数据有 ' + findCSS3 + " 条，下拉拖动加载次数可能会比较频繁哦。 ^o^",
+            cancelText: '九条数据',
+            confirmText: '全部加载',
+            success: function(res) {
+              if (res.cancel) {
+                findCSS3 = 9;
+                that.setData({
+                  _listNumber: findCSS3*3
+                })
+              }
+            }
+          })
+        }else if(findCSS3 <= 9){
           wx.showToast({
-            title: '加载前 ' + c3temp + ' 条数据',
-            icon: 'loading',
+            title: "共有 " + findCSS3 + " 条数据",
+            duration: 2500,
             mask: true,
-            duration: 3000
-          }),
-          that.setData({
-            loadMore: "getMoreList",
-            loadMoreClass: "moreListCollapse"
-          }),
-          c3temp = refreshAgain;
+            image: "/images/find-no.png"
+          })
         }
 
-        c3temp++;
-        loopNum++;
+        if(findCSS3 == 0){
+          that.setData({ // 当 CSS3 属性找不到时，清除 CSS3 的列表
+            attrNameArray: "",
+            _____lastList: "",
+            __showEnd: ""
+          })
+          wx.showToast({
+            title: that.data.inputValue + "是什么属性？找不到啊！",
+            duration: 2500,
+            mask: true,
+            image: "/images/find-no.png"
+          })
+        }
       }
-    }
-
-    if(c3temp == 0){
-      that.setData({
-        findTips404: "findTips404",
-        findTips404Text: "Ta 分享的属性是："
-      })
-    }
-          }
-        })
-        console.log("同步失败，设置开始设置缓存用于同步处理")
-      }
-    }catch (e){
-      console.log("储存空间不够用啊！")
-    }
+    })
   }
 })
