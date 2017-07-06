@@ -1,173 +1,33 @@
-<!--index.wxml-->
-<view class="container">
-  <view class="updata_time">{{ data.message }}</view>
+<button bindtap="getJson" class="loadDataBtn" style="display: {{_getJsonBtnStatus}}">{{ _getJsonBtnText }}</button>
+<image src="/images/find-no.png" class="findTipsPic" style="display: {{_getJsonBtnStatus}}"></image>
 
-	<navigator url="/pages/index/index" open-type="switchTab" class="goHome">{{ showTitle }} 兼容信息，点这里查其他属性</navigator>
+<view class="container" style="display: {{ __beginUse }}">
+	<view class="updata_time">{{ _timeStamp }}</view>
 
-  <form bindsubmit="goHome">
-	  <view class="search_input">
-			<input type="text" confirm-type="search" value="{{ inputValue }}"/>
-	  </view>
+	<view class="colorSimple">
+		<text class="green">支持</text> <text class="yellow">部分支持</text> <text class="red">不支持</text> <text class="unknow">未知</text>
+	</view>
 
-		<view class="supportList">
-			<text class="css2Title">CSS 2.1 属性：</text>
-			<text class="css2Descrption">该方块内<text>绿色</text>文字的属性都已经支持目前所有浏览器（包含 IE6+, Firefox 2+, Chrome 1+ 等）。</text>
-			<view wx:for="{{css2_s}}" wx:key="css2_s" class="css2Item">{{item}}</view>
-		</view>
-
-		<view class="colorSimple">
-			<text class="green">支持</text> <text class="yellow">部分支持</text> <text class="red">不支持</text>
-		</view>
-
-		<view class="caniuse_list">
-			<view wx:for="{{ c3Result }}" class="item_box">
-				<view class="c3T">{{item.c3T}}</view>
-				<!-- <view class="c3K">{{item.c3K}}</view> -->
-				<view class="c3D">{{item.c3D}}</view>
-				<!-- <view class="c3N">{{item.c3N}}</view> -->
-				<view class="c3UY">浏览器支持率：{{item.c3UY}}%</view>
-				<view class="c3UA">部分支持情况：{{item.c3UA}}%</view>
-				<!-- <view wx:for="{{ c3Result }}">{{item.c3Browser}}</view> -->
-				<!-- <view wx:for="{{ item.c3Browser }}">{{item.ie}}</view> -->
-				<view class="item_list">
-					<view class="browser_items">
-						<text><text>IE</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.ie }}"><view>{{index}} : {{item}}</view></view> -->
-						<view class="red">{{ item.csBrowser_ieN }}</view>
-						<view class="yellow">{{ item.csBrowser_ieA }}</view>
-						<view class="green">{{ item.csBrowser_ieY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Edge</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.edge }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_edgeN }}</view>
-						<view class="yellow">{{ item.csBrowser_edgeA }}</view>
-						<view class="green">{{ item.csBrowser_edgeY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Firefox</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.firefox }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_firefoxN }}</view>
-						<view class="yellow">{{ item.csBrowser_firefoxA }}</view>
-						<view class="green">{{ item.csBrowser_firefoxY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Chrome</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.chrome }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_chromeN }}</view>
-						<view class="yellow">{{ item.csBrowser_chromeA }}</view>
-						<view class="green">{{ item.csBrowser_chromeY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Safari</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.safari }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_safariN }}</view>
-						<view class="yellow">{{ item.csBrowser_safariA }}</view>
-						<view class="green">{{ item.csBrowser_safariY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Opera</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.opera }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_operaN }}</view>
-						<view class="yellow">{{ item.csBrowser_operaA }}</view>
-						<view class="green">{{ item.csBrowser_operaY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>iOS Safari</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.ios_saf }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_ios_safN }}</view>
-						<view class="yellow">{{ item.csBrowser_ios_safA }}</view>
-						<view class="green">{{ item.csBrowser_ios_safY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Opera Mini</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.op_mini }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_op_miniN }}</view>
-						<view class="yellow">{{ item.csBrowser_op_miniA }}</view>
-						<view class="green">{{ item.csBrowser_op_miniY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Android Browser</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.android }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_androidN }}</view>
-						<view class="yellow">{{ item.csBrowser_androidA }}</view>
-						<view class="green">{{ item.csBrowser_androidY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Blackberry Browser</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.bb }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_bbN }}</view>
-						<view class="yellow">{{ item.csBrowser_bbA }}</view>
-						<view class="green">{{ item.csBrowser_bbY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Opera Mobile</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.op_mob }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_op_mobN }}</view>
-						<view class="yellow">{{ item.csBrowser_op_mobA }}</view>
-						<view class="green">{{ item.csBrowser_op_mobY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Chrome for Android</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.and_chr }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_and_chrN }}</view>
-						<view class="yellow">{{ item.csBrowser_and_chrA }}</view>
-						<view class="green">{{ item.csBrowser_and_chrY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Firefox for Android</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.and_ff }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_and_ffN }}</view>
-						<view class="yellow">{{ item.csBrowser_and_ffA }}</view>
-						<view class="green">{{ item.csBrowser_and_ffY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>IE Mobile</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.ie_mob }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_ie_mobN }}</view>
-						<view class="yellow">{{ item.csBrowser_ie_mobA }}</view>
-						<view class="green">{{ item.csBrowser_ie_mobY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>UC Browser for Android</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.and_uc }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_and_ucN }}</view>
-						<view class="yellow">{{ item.csBrowser_and_ucA }}</view>
-						<view class="green">{{ item.csBrowser_and_ucY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Samsung Internet</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.samsung }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_samsungN }}</view>
-						<view class="yellow">{{ item.csBrowser_samsungA }}</view>
-						<view class="green">{{ item.csBrowser_samsungY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>QQ Browser</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.and_qq }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_and_qqN }}</view>
-						<view class="yellow">{{ item.csBrowser_and_qqA }}</view>
-						<view class="green">{{ item.csBrowser_and_qqY }}</view>
-					</view>
-					<view class="browser_items">
-						<text><text>Baidu Browser</text></text>
-						<!-- <view wx:for="{{ item.c3Browser.baidu }}">{{index}} : {{item}}</view> -->
-						<view class="red">{{ item.csBrowser_baiduN }}</view>
-						<view class="yellow">{{ item.csBrowser_baiduA }}</view>
-						<view class="green">{{ item.csBrowser_baiduY }}</view>
-					</view>
-				</view>
+	<view class="caniuse_list">
+		<block wx:for="{{ attrNameArray }}" wx:key="browserInfo">
+			<view class="item_box" bindtouchstart="touchStart"  bindtouchend="touchEnd" bindtap="longTap" id="tag_{{index}}">
+				<block wx:if="{{ index%3 == 1 }}">
+					<view wx:for="{{ item }}" wx:key="detail" class="attrInfo">{{ item }}</view>
+				</block>
+				<block wx:if="{{ ((index)%3) == 2 }}">
+					<block wx:for="{{ item }}" wx:key="type">
+						<view class="verList">
+							<view wx:for="{{ item }}" wx:key="version" class="version">
+								<block wx:if="{{ item != 0 }}">
+									{{ item }}
+								</block>
+							</view>
+						</view>
+					</block>
+				</block>
 			</view>
-		</view>
-		<view class="{{ loadMore }}">
-			<navigator class="loadMoreBox"  url="/pages/index/index" open-type="switchTab">需要查看更多的 {{ showTitle }} 请到查询页</navigator>
-		</view>
-
-		<view class="tipsBox">
-			<view class="{{ findTips404 }}">
-				<text>{{ findTips404Text }} {{ showTitle }} ？找不到啊！</text>
-				<image src="/images/find-no.png" class="findTipsPic"></image>
-			</view>
-		</view>
-  </form>
+		</block>
+	</view>
 </view>
+
+<text bindtap="gotoHome" class="updataBtn" style="display: {{ _goHomeBtn }}">回首页查属性</text>

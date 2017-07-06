@@ -1,78 +1,144 @@
 var app = getApp()
-var timestamp = ""
-var list = {}
-var listKeys = []
-var listItemNum = 0
+
 Page({
-	onLoad: function() {
-		var that = this
-		try{
-      var storageKeys = wx.getStorageInfoSync()
-      
-      for(let k in storageKeys.keys) {
-        if(storageKeys.keys[k] == "t") {
-          timestamp = wx.getStorageSync(storageKeys.keys[k])
-          var date = new Date(timestamp * 1000);
-        	var formattedDate = date.getFullYear() + "/" + ('0' + (date.getMonth() + 1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) + " " + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
-        	that.setData({
-	          data: {
-	            message: "数据更新时间：" + formattedDate
-	          }
-	        })
+  onLoad: function() {
+    var that = this
+    
+    that.setData({
+      _timeStamp: wx.getStorageSync("timeStamp")
+    })
+  },
+
+  // 通过判断网络状态的类型后，点击加载按钮加载 json 文件
+  getJson: function () {
+    var that = this
+    wx.getNetworkType({
+      success: function(res) {
+        var networkType = res.networkType
+        if(networkType == "wifi"){ // 根据网络类型选择是否提示直接加载
+          // wifi情况下直接开始加载
+          wx.clearStorage()
+          var _loadJson = that.loadJson() // 开始使用加载 json 的函数
+        }else{
+          // 非 wifi 情况下提示需要消耗流量加载，确定之后即可加载数据
+          wx.showModal({
+            title: '网络状态提醒',
+            content: '目前你所连接的是 ' + networkType + " 网络，并非 wifi 网络，该数据请求可能需要 200K 以上的流量请求，确定更新？",
+            success: function(res) {
+              if (res.confirm) {
+                wx.clearStorage()
+                var _loadJson = that.loadJson() // 开始使用加载 json 的函数
+              }
+            }
+          })
         }
       }
-    }catch(e){
-    	console.log("出错了，数据没了！")
-    }
-	},
+    })
+  },
 
-	updata: function() {
-		var that = this
-
+  // 点击加载按钮后开始，加载 json 数据
+  loadJson: function(){
+    var that = this
     wx.showLoading({
-      title: '数据加载中',
+      title: "开始初始化数据……",
       mask: true
     })
-
-		wx.request({
+    wx.request({
       url: "https://raw.githubusercontent.com/Fyrd/caniuse/master/data.json",
       data: {},
-      method: 'GET',
+      method: "GET",
       header: {
-          'content-type': 'application/json'
+        'content-type': 'application/json'
       },
+      success: function (res) {
+        var listNum = 0 // 计算属性列表的总数
+        var attrSearchList = []
+        for (let attrList in res.data.data) {
+          listNum++
+          attrSearchList.push([
+            attrList,
+            res.data.data[attrList].title,
+            res.data.data[attrList].keywords,
+            res.data.data[attrList].description
+            ])
+          wx.setStorageSync(attrList, res.data.data[attrList])
+        }
+        wx.setStorageSync("_attrSearchList",attrSearchList)
+        that.setData({
+          _attrSearchList: attrSearchList
+        })
 
-      success: function(res) {
+        var CSS2List = [
+          'background-color',
+          'background-image',
+          'background-position (2 params)',
+          'background-repeat (repeat | repeat-x | repeat-y | no-repeat)',
+          'border-collapse (collapse | separate)',
+          'border-color',
+          'border-spacing',
+          'border-style',
+          'bottom',
+          'color',
+          'clear (none | left | right | both)',
+          'display (none | inline | block | list-item)',
+          'float (none | left | right)',
+          'font-family',
+          'font-size',
+          'font-style (normal | italic | oblique)',
+          'font-variant (normal | small-caps)',
+          'font-weight',
+          'height',
+          'left',
+          'line-height',
+          'list-style',
+          'list-style-image',
+          'list-style-position',
+          'margin',
+          'overflow (visible | hidden | scroll | auto)',
+          'padding',
+          'position (static | relative | absolute)',
+          'right',
+          'text-align (left | right | center | justify)',
+          'text-decoration (none | underline | overline | line-through)',
+          'text-indent',
+          'text-transform (capitalize | uppercase | lowercase | none)',
+          'top',
+          'width',
+          'word-spacing',
+          'visibility (visible | hidden)',
+          'z-index'
+        ]
 
-        timestamp = res.data.updated;
+        // json 数据包的更新时间转换格式
+        var timestamp = res.data.updated;
         var date = new Date(timestamp * 1000);
         var formattedDate = date.getFullYear() + "/" + ('0' + (date.getMonth() + 1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) + " " + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
+        wx.setStorageSync("timeStamp", "数据最后更新时间：" + formattedDate) // 在 localstorage 中的继属性列表之后增加时间戳格式
+        wx.setStorageSync("jsonTotal", listNum) // 在 localstorage 中的继属性列表之后增加属性列表的总数
 
-        app.post = res.data.data
+        wx.setStorageSync("CSS2",CSS2List)
 
-        wx.setStorageSync("t", timestamp)
+        wx.setStorageSync("ver","2.0.0")
 
-        for(let r in app.post){
-        	listItemNum++
-        	wx.removeStorageSync(r)
-          wx.setStorageSync(r, app.post[r])
-          wx.getStorageSync(r, app.post[r])
-          console.log("数据加载 " + listItemNum + " 条")
-        }
-        
+        // json 数据包的更新时间写入data
+        that.setData({
+          _timeStamp: wx.getStorageSync("timeStamp"),
+        })
+
+        wx.vibrateShort()
+
         wx.showToast({
-          title: '加载完成！',
-          icon: 'success',
-          duration: 1500
+          title: "更新完成",
+          mask: true,
+          duration: 2000
         })
-
-				that.setData({
-          data: {
-            message: "数据更新时间：" + formattedDate
-          }
+      },
+      complete: function () {
+        wx.hideLoading()
+        wx.switchTab({
+          url: '/pages/index/index'
         })
-        
       }
     })
-	}
+  },
 })
