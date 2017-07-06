@@ -118,6 +118,8 @@ Page({
 
         wx.setStorageSync("CSS2",CSS2List)
 
+        wx.setStorageSync("ver","2.0.0")
+
         // json 数据包的更新时间写入data
         that.setData({
           _timeStamp: wx.getStorageSync("timeStamp"),

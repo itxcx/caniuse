@@ -305,3 +305,14 @@
 .showEnd {
 	display: block;
 }
+.updataBtn {
+	display: block;
+	padding: 20rpx;
+	margin:0 20rpx 20rpx;
+	text-align: center;
+	line-height: 32rpx;
+	font-size: 32rpx;
+	border-radius: 8rpx;
+	color: #fff;
+	background-color: #DB5600;
+}

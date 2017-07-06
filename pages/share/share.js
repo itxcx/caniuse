@@ -1,91 +1,77 @@
-var app = getApp(),
-    pager = 0,
-    againNumber = 0
+var app = getApp()
 
 Page({
   onLoad: function(res){
     var that = this
     var _attrSearchList = []
 
-    wx.showLoading({
-      title: "数据初始化……",
-      mask: true
-    })
-    
-    that.setData({
-      __beginUse: "",
-      _getJsonBtnStatus: "none",
-      _jsonTotal: wx.getStorageSync("jsonTotal"),
-      _timeStamp: wx.getStorageSync("timeStamp")
-    })
-    for(var p=0;p<that.data._jsonTotal;p++){
-      _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
-    }
-    that.setData({
-      _attrSearchList: _attrSearchList
-    })
-    wx.hideLoading()
-    if (wx.getStorageSync("timeStamp")) {
-      wx.showToast({
-        title: '初始化完成',
-        duration: 2000,
-        mask: true
-      })
-      that.setData({
-        inputDisabled: false,
-        inputFocus: true
-      })
-    } else {
+    if(wx.getStorageSync("ver") != "2.0.0") {
       that.setData({
         __beginUse: "none",
         _getJsonBtnStatus: "",
-        inputDisabled: true,
-        inputFocus: false,
-        _getJsonBtnText: "点我初始化数据" // 加载按钮显示出来
+        _getJsonBtnText: "点我初始化数据",
+        _goHomeBtn: "none"
       })
-    }
-
-    console.log(res)
-    // 假设一个传值过来的数据
-    that.setData({
-      shareTheTag: "Flexible Box Layout Module"
-    })
-
-    var _showJson = that.showJson(that.data.shareTheTag)
-  },
-
-  beginSearch: function(e) {
-    var that = this
-    that.setData({
-      inputValue: that.data.shareTheTag,
-      ___pager: 0,
-      _____lastList: "",
-      _listShowNumber: 0,
-      _listNumber: 0,
-      __theEnd: "",
-      __showEnd: ""
-    })
-  },
-
-  bindconfirm: function() {
-    var that = this,
-        getValue = that.data.inputValue,
-        pager = 0
-    if( getValue == "" || getValue == undefined ) {
-      wx.showToast({
-        title: "你确认输入东西？",
-        duration: 2000,
-        mask: true,
-        image: "/images/find-no.png"
-      })
-      that.setData({ // 输入为空时，清空已展示的列表
-        attrNameArray: "",
-        ___pager: 0,
-        _____lastList: ""
+      wx.showModal({
+        title: "版本更新提示",
+        content: "caniuse简化版经过一次较多的改动，请先更新！",
+        showCancel: false,
+        success: function(res){
+          if(res.confirm) {
+            console.log("可以更新")
+            wx.setStorageSync("ver","2.0.0")
+            var _loadJson = that.loadJson()
+          }
+        }
       })
     }else{
-      var _showJson = that.showJson(that.data.shareTheTag)
+
+      wx.showLoading({
+        title: "数据初始化……",
+        mask: true
+      })
+
+      console.log(res.shareTag)
+      
+      that.setData({
+        __beginUse: "",
+        _getJsonBtnStatus: "none",
+        _goHomeBtn: "none",
+        _jsonTotal: wx.getStorageSync("jsonTotal"),
+        _timeStamp: wx.getStorageSync("timeStamp")
+      })
+      for(var p=0;p<that.data._jsonTotal;p++){
+        _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
+      }
+      that.setData({
+        inputValue: res.shareTag, // 从首页传值过来的
+        _attrSearchList: _attrSearchList
+      })
+
+      wx.hideLoading()
+
+      if (wx.getStorageSync("timeStamp")) {
+        wx.showToast({
+          title: '初始化完成',
+          duration: 2000,
+          mask: true
+        })
+        var _showJson = that.showJson(that.data.inputValue)
+      } else {
+        that.setData({
+          __beginUse: "none",
+          _getJsonBtnStatus: "",
+          _goHomeBtn: "none",
+          _getJsonBtnText: "点我初始化数据" // 加载按钮显示出来
+        })
+      }
     }
+  },
+
+  gotoHome: function() {
+    wx.switchTab({
+      url: '/pages/index/index'
+    })
   },
   
   // 判断浏览器的版本，获取最低版本
@@ -124,6 +110,7 @@ Page({
         var networkType = res.networkType
         that.setData({
           __beginUse: "none",
+          _goHomeBtn: "none",
           _getJsonBtnStatus: "" // 加载按钮显示出来
         })
         if(networkType == "wifi"){ // 根据网络类型选择是否提示直接加载
@@ -145,11 +132,20 @@ Page({
     })
   },
 
+  onShareAppMessage: function (res) {
+    var that = this
+    console.log(that.data.inputValue)
+    return {
+      title: that.data.attrNameArray[1][0] + " 属性兼容性列表",
+      path: '/pages/share/share?shareTag=' + that.data.inputValue
+    }
+  },
+
   // 点击加载按钮后开始，加载 json 数据
   loadJson: function(){
     var that = this
     wx.showLoading({
-      title: "开始初始化数据……",
+      title: "加载数据……",
       mask: true
     })
     wx.request({
@@ -162,6 +158,7 @@ Page({
       success: function (res) {
         var listNum = 0 // 计算属性列表的总数
         var attrSearchList = []
+        
         for (let attrList in res.data.data) {
           listNum++
           attrSearchList.push([
@@ -184,21 +181,35 @@ Page({
         wx.setStorageSync("timeStamp", "数据最后更新时间：" + formattedDate) // 在 localstorage 中的继属性列表之后增加时间戳格式
         wx.setStorageSync("jsonTotal", listNum) // 在 localstorage 中的继属性列表之后增加属性列表的总数
 
-        wx.setStorageSync("CSS2",CSS2List)
-
         // json 数据包的更新时间写入data
         that.setData({
-          _jsonTotal: listNum,
           __beginUse: "",
           _getJsonBtnStatus: "none",
-          _timeStamp: wx.getStorageSync("timeStamp"),
-          ___pager: pager,
-          inputDisabled: false,
-          inputFocus: true
+          _goHomeBtn: "none",
+          _jsonTotal: wx.getStorageSync("jsonTotal"),
+          _timeStamp: wx.getStorageSync("timeStamp")
+        })
+
+        var _showJson = that.showJson(that.data.inputValue)
+      },
+      fail: function(){
+        wx.showModal({
+          title: "加载时间过长",
+          content: "怎么说呢，数据来自 github 网站，网络问题可能导致加载了 30 秒，还没加载完成。要再试一次吗？",
+          success: function(res) {
+            if (res.confirm) {
+              var _loadJson = that.loadJson() // 开始使用加载 json 的函数
+            }
+          }
         })
       },
       complete: function () {
         wx.hideLoading()
+        wx.showToast({
+          title: "初始化数据……",
+          mask: true,
+          duration: 2000
+        })
       }
     })
   },
@@ -209,29 +220,20 @@ Page({
       success: function(res) {
         let attrDetailArray = [],
             attrNameArray = [],
-            shareTag = [],
             findCSS3 = 0
-        pager = 0
 
         wx.showLoading({
           title: "加载数据……",
           mask: true
         })
         that.setData({
-          attrNameArray: [],
-          ___pager: pager
+          attrNameArray: []
         })
 
         for(let i = 0, j = 0; i < that.data._jsonTotal; i++){
-          if(that.data._attrSearchList[i][0].match(new RegExp(findValue)) || that.data._attrSearchList[i][1].match(new RegExp(findValue)) || that.data._attrSearchList[i][2].match(new RegExp(findValue)) || that.data._attrSearchList[i][3].match(new RegExp(findValue))) {
+          if(that.data._attrSearchList[i][0] == findValue || that.data._attrSearchList[i][1] == findValue || that.data._attrSearchList[i][2] == findValue || that.data._attrSearchList[i][3] == findValue) {
             
             attrNameArray.push(that.data._attrSearchList[i][0])
-
-            console.log(that.data._attrSearchList[i][0])
-            shareTag.push(that.data._attrSearchList[i][0])
-            that.setData({
-              _getShareTag: shareTag
-            })
 
             let browserTypeArray = []
 
@@ -261,7 +263,7 @@ Page({
                   browserTypeArray.push([type,brwoserVerY,brwoserVerA,brwoserVerU,brwoserVerN])
                 }
                 attrNameArray.push([
-                  (j + 1) + "、" + attrDetailArray[j].title,
+                  attrDetailArray[j].title,
                   attrDetailArray[j].description,
                   "浏览器支持率：" + attrDetailArray[j].usage_perc_y,
                   "部分支持情况： "+attrDetailArray[j].usage_perc_a
@@ -275,47 +277,24 @@ Page({
         }
 
         that.setData({
+          _goHomeBtn: "",
           attrNameArray, // 获取最终筛选后 json 的列表信息
-          inputValue: findValue,
-          _listNumber: findCSS3*3,
-          ___pager: pager,
-          _listShowNumber: 0,
-          __showEnd: ""
-        })
-
-        // var reachBottom = that.onReachBottom();        
+          inputValue: findValue
+        })   
 
         wx.hideLoading()
 
-        if(findCSS3 > 9){
-          wx.showModal({
-            title: '数据过多',
-            content: '目前找到的数据有 ' + findCSS3 + " 条，下拉拖动加载次数可能会比较频繁哦。 ^o^",
-            cancelText: '九条数据',
-            confirmText: '全部加载',
-            success: function(res) {
-              if (res.cancel) {
-                findCSS3 = 9;
-                that.setData({
-                  _listNumber: findCSS3*3
-                })
-              }
-            }
-          })
-        }else if(findCSS3 <= 9){
-          wx.showToast({
-            title: "共有 " + findCSS3 + " 条数据",
-            duration: 2500,
-            mask: true,
-            image: "/images/find-no.png"
-          })
-        }
+        wx.showToast({
+          title: "共有 " + findCSS3 + " 条数据",
+          duration: 2500,
+          mask: true,
+          image: "/images/find-no.png"
+        })
 
-        if(findCSS3 == 0){
+        if(findCSS3 == 0 && wx.getStorageSync("timeStamp")){
           that.setData({ // 当 CSS3 属性找不到时，清除 CSS3 的列表
             attrNameArray: "",
-            _____lastList: "",
-            __showEnd: ""
+            _goHomeBtn: "none"
           })
           wx.showToast({
             title: that.data.inputValue + "是什么属性？找不到啊！",

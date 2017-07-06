@@ -9,7 +9,7 @@
 	</view>
 
 	<view class="caniuse_list">
-		<block wx:for="{{ _____lastList }}" wx:key="browserInfo">
+		<block wx:for="{{ attrNameArray }}" wx:key="browserInfo">
 			<view class="item_box" bindtouchstart="touchStart"  bindtouchend="touchEnd" bindtap="longTap" id="tag_{{index}}">
 				<block wx:if="{{ index%3 == 1 }}">
 					<view wx:for="{{ item }}" wx:key="detail" class="attrInfo">{{ item }}</view>
@@ -29,3 +29,5 @@
 		</block>
 	</view>
 </view>
+
+<text bindtap="gotoHome" class="updataBtn" style="display: {{ _goHomeBtn }}">回首页查属性</text>

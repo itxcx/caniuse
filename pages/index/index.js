@@ -7,44 +7,66 @@ Page({
     var that = this
     var _attrSearchList = []
 
-    wx.showLoading({
-      title: "数据初始化……",
-      mask: true
-    })
-    
-    that.setData({
-      __beginUse: "",
-      _getJsonBtnStatus: "none",
-      _jsonTotal: wx.getStorageSync("jsonTotal"),
-      _timeStamp: wx.getStorageSync("timeStamp"),
-      _CSS2Title: "",
-      inputDisabled: true
-    })
-    for(var p=0;p<that.data._jsonTotal;p++){
-      _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
-    }
-    that.setData({
-      _attrSearchList: _attrSearchList
-    })
-    wx.hideLoading()
-    if (wx.getStorageSync("timeStamp")) {
-      wx.showToast({
-        title: '初始化完成',
-        duration: 2000,
-        mask: true
-      })
-      that.setData({
-        inputDisabled: false,
-        inputFocus: true
-      })
-    } else {
+    if(wx.getStorageSync("ver") != "2.0.0") {
       that.setData({
         __beginUse: "none",
         _getJsonBtnStatus: "",
-        inputDisabled: true,
-        inputFocus: false,
-        _getJsonBtnText: "点我初始化数据" // 加载按钮显示出来
+        _getJsonBtnText: "点我初始化数据"
+        // ver: "2.0.0"
       })
+      wx.showModal({
+        title: "版本更新提示",
+        content: "caniuse简化版经过一次较多的改动，请先更新！",
+        showCancel: false,
+        success: function(res){
+          if(res.confirm) {
+            console.log("可以更新")
+            wx.setStorageSync("ver","2.0.0")
+            var _loadJson = that.loadJson()
+          }
+        }
+      })
+    }else{
+
+      wx.showLoading({
+        title: "数据初始化……",
+        mask: true
+      })
+      
+      that.setData({
+        __beginUse: "",
+        _getJsonBtnStatus: "none",
+        _jsonTotal: wx.getStorageSync("jsonTotal"),
+        _timeStamp: wx.getStorageSync("timeStamp"),
+        _CSS2Title: "",
+        inputDisabled: true
+      })
+      for(var p=0;p<that.data._jsonTotal;p++){
+        _attrSearchList.push(wx.getStorageSync("_attrSearchList")[p])
+      }
+      that.setData({
+        _attrSearchList: _attrSearchList
+      })
+      wx.hideLoading()
+      if (wx.getStorageSync("timeStamp")) {
+        wx.showToast({
+          title: '初始化完成',
+          duration: 2000,
+          mask: true
+        })
+        that.setData({
+          inputDisabled: false,
+          inputFocus: true
+        })
+      } else {
+        that.setData({
+          __beginUse: "none",
+          _getJsonBtnStatus: "",
+          inputDisabled: true,
+          inputFocus: false,
+          _getJsonBtnText: "点我初始化数据" // 加载按钮显示出来
+        })
+      }
     }
   },
 
@@ -67,26 +89,27 @@ Page({
         tagId = parseInt(Number(e.currentTarget.id.match(/\d.*/ig)/3)),
         touchTime = that.data._touchEnd - that.data._touchStart,
         selTag = e.currentTarget.id.match(/\d.*/ig),
-        shareTheTag = ""
+        shareTheTag = "",
+        showShareTag = "",
+        showTag = e.currentTarget.id.match(/\d.*/ig)
 
     if(touchTime > 300){
-      that.setData({
-        _getLastTag: that.data._getShareTag[tagId] 
-      })
 
       if(selTag%3==1) {
-        // 可以做点什么呢好呢？😆
-      }else{
         selTag = selTag - 1
+      }else{
+        selTag = selTag - 2
+        showTag = showTag - 1
       }
-      shareTheTag = that.data._____lastList[selTag][0].match(/[^(\d.*、)]([\s\S].*)/ig)
+      shareTheTag = that.data._____lastList[selTag].match(/[^(\d.*、)]([\s\S].*)/ig)
+      showShareTag = that.data._____lastList[showTag][0].match(/[^(\d.*、)]([\s\S].*)/ig)
       
       wx.showModal({
         title: "分享提示：",
-        content: "你要分享的是 " + shareTheTag + " 这块内容吗？",
+        content: "你要分享的是 " + showShareTag + " 这块内容吗？",
         success: function(res) {
           if(res.confirm){
-            console.log("要分享的tag是： " + shareTheTag) 
+            // console.log("要分享的tag是： " + shareTheTag) 
             wx.redirectTo({
               url: '/pages/share/share?shareTag=' + shareTheTag
             })
@@ -201,7 +224,7 @@ Page({
   loadJson: function(){
     var that = this
     wx.showLoading({
-      title: "开始初始化数据……",
+      title: "加载数据……",
       mask: true
     })
     wx.request({
@@ -214,6 +237,7 @@ Page({
       success: function (res) {
         var listNum = 0 // 计算属性列表的总数
         var attrSearchList = []
+
         for (let attrList in res.data.data) {
           listNum++
           attrSearchList.push([
@@ -281,6 +305,7 @@ Page({
 
         // json 数据包的更新时间写入data
         that.setData({
+          ver: "2.0.0",
           _jsonTotal: listNum,
           __beginUse: "",
           _getJsonBtnStatus: "none",
@@ -291,8 +316,24 @@ Page({
           inputFocus: true
         })
       },
+      fail: function(){
+        wx.showModal({
+          title: "加载时间过长",
+          content: "怎么说呢，数据来自 github 网站，网络问题可能导致加载了 30 秒，还没加载完成。要再试一次吗？",
+          success: function(res) {
+            if (res.confirm) {
+              var _loadJson = that.loadJson() // 开始使用加载 json 的函数
+            }
+          }
+        })
+      },
       complete: function () {
         wx.hideLoading()
+        wx.showToast({
+          title: "初始化数据……",
+          mask: true,
+          duration: 2000
+        })
       }
     })
   },
@@ -343,7 +384,7 @@ Page({
             
             attrNameArray.push(that.data._attrSearchList[i][0])
 
-            console.log(that.data._attrSearchList[i][0])
+            // console.log(that.data._attrSearchList[i][0])
             shareTag.push(that.data._attrSearchList[i][0])
             that.setData({
               _getShareTag: shareTag
