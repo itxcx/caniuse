@@ -1,4 +1,4 @@
-# canines简化版（微信小程序）
+# caniues简化版（微信小程序）
 
 一次无意间在 GitHub 上看到 [@Fyrd](https://github.com/Fyrd) 的仓库中有一个 [caniuse](https://github.com/Fyrd/caniuse)，并且发现最关键的一点就是 http://caniuse.com 网站中的数据在这里可以直接看到，于是乎就冒出用这个 json 文件写一个小程序的想法。
 
