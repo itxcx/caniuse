@@ -37,9 +37,12 @@
 }
 .supportList .css2Title {
 	display: block;
-	padding-bottom: 10rpx;
+	padding-bottom: 5rpx;
 	font-size: 32rpx;
 	color: #333;
+}
+.supportList .css2Descrption {
+	padding-bottom: 10rpx;
 }
 .supportList .css2Descrption text {
 	color: green;
@@ -51,44 +54,34 @@
 	color: green;
 	border-left: 2px solid green;
 }
-.caniuse_list {
-	overflow: hidden;
-	zoom: 1;
+.browser_list {
+	display: flex;
+	flex-wrap: wrap;
 }
 .item_box {
 	overflow: hidden;
-	margin: 10rpx 20rpx;
+	margin: 20rpx;
 	padding: 20rpx;
 	font-size: 28rpx;
 	border-radius: 6rpx;
 	color: #666;
 	background-color: #f2e8d5;
 }
-.item_box:nth-child(3n+1) {
-	display: none;
-}
-.item_box:nth-child(3n) {
-	display: flex;
-	flex-wrap: wrap;
-	padding: 20rpx 0;
-	margin-top: -40rpx;
-	margin-bottom: 20rpx;
-}
-.attrInfo:nth-child(1) {
+.attrTitle {
 	padding-bottom: 15rpx;
 	font-size: 36rpx;
 	font-weight: bold;
 	color: #333;
 }
-.attrInfo:nth-child(2) {
+.attrDescription {
 	display: block;
 	padding-bottom: 15rpx;
 	color: #999;
 }
-.attrInfo:nth-child(4) {
+.attrUsageY {
 	color: #7e7e00;
 }
-.attrInfo:nth-child(3) {
+.attrUsageA {
 	color: #009114;
 }
 .attrInfo:empty {
@@ -125,28 +118,28 @@
 .verList .version:nth-child(1) {
 	color: #000;
 }
-.verList .version:nth-child(2) {
+.verList .brwoserVerY {
 	background-color: #39b54a;
 }
-.verList .version:nth-child(2):after {
+.verList .brwoserVerY:after {
 	content: " ⬆︎"
 }
-.verList .version:nth-child(5) {
+.verList .brwoserVerN {
 	background-color: #c44230;
 }
-.verList .version:nth-child(5):after {
+.verList .brwoserVerN:after {
 	content: " ⬇︎"
 }
-.verList .version:nth-child(4) {
+.verList .brwoserVerU {
 	background-color: #838383;
 }
-.verList .version:nth-child(4):after {
+.verList .brwoserVerU:after {
 	content: " ⬇︎"
 }
-.verList .version:nth-child(3) {
+.verList .brwoserVerA {
 	background-color: #A8BD04;
 }
-.verList .version:nth-child(3):after {
+.verList .brwoserVerA:after {
 	content: " ⬇︎"
 }
 

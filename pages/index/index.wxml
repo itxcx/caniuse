@@ -1,5 +1,5 @@
-<button bindtap="getJson" class="loadDataBtn" style="display: {{_getJsonBtnStatus}}">{{ _getJsonBtnText }}</button>
-<image src="/images/find-no.png" class="findTipsPic" style="display: {{_getJsonBtnStatus}}"></image>
+<!-- <button bindtap="getJson" class="loadDataBtn" style="display: {{_getJsonBtnStatus}}">{{ _getJsonBtnText }}</button>
+<image src="/images/find-no.png" class="findTipsPic" style="display: {{_getJsonBtnStatus}}"></image> -->
 
 <view class="container" style="display: {{ __beginUse }}">
 	<view class="updata_time">{{ _timeStamp }}</view>
@@ -26,6 +26,27 @@
 	</view>
 
 	<view class="caniuse_list">
+		<block wx:for="{{ getCSS3 }}" wx:key="attr_list" wx:for-item="attr_list">
+			<view class="item_box">
+				<block wx:for="{{ attr_list }}" wx:key="attr_list" wx:for-item="attr_description">
+					<view wx:if="{{ index == 'title' }}" class="attrTitle">{{ attr_description }}</view>
+					<view wx:if="{{ index == 'description' }}" class="attrDescription">{{ attr_description }}</view>
+					<view wx:if="{{ index == 'usage_perc_a' }}" class="attrUsageA">{{ attr_description }}</view>
+					<view wx:if="{{ index == 'usage_perc_y' }}" class="attrUsageY">{{ attr_description }}</view>
+					<view wx:if="{{ index == 'browser' }}" class="browser_list">
+						<view wx:for="{{ attr_description }}" wx:key="browserList" wx:for-item="browserInfo" class="verList">
+							<view class="version">{{ index }}</view>
+							<block wx:for="{{ browserInfo }}" wx:key="browserList" wx:for-item="browserVer">
+								<view class="version {{ index }}" wx:if="{{ browserVer != 0 }}">{{ browserVer }}</view>
+							</block>
+						</view>
+					</view>
+				</block>
+			</view>
+		</block>
+	</view>
+
+	<!-- <view class="caniuse_list">
 		<block wx:for="{{ _____lastList }}" wx:key="browserInfo">
 			<view class="item_box" bindtouchstart="touchStart"  bindtouchend="touchEnd" bindtap="longTap" id="tag_{{index}}">
 				<block wx:if="{{ index%3 == 1 }}">
@@ -44,7 +65,7 @@
 				</block>
 			</view>
 		</block>
-	</view>
+	</view> -->
 
 	<view class="showThis {{ __showEnd }}">{{ __theEnd }}</view>
 </view>

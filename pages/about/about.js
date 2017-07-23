@@ -11,6 +11,11 @@ Page({
 
   // 通过判断网络状态的类型后，点击加载按钮加载 json 文件
   getJson: function () {
+    wx.clearStorage()
+    wx.switchTab({
+      url: '/pages/index/index'
+    })
+    
     var that = this
     wx.getNetworkType({
       success: function(res) {
