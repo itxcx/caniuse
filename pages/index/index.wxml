@@ -1,7 +1,7 @@
 <!-- <button bindtap="getJson" class="loadDataBtn" style="display: {{_getJsonBtnStatus}}">{{ _getJsonBtnText }}</button>
 <image src="/images/find-no.png" class="findTipsPic" style="display: {{_getJsonBtnStatus}}"></image> -->
 
-<view class="container" style="display: {{ __beginUse }}">
+<view class="container">
 	<view class="updata_time">{{ _timeStamp }}</view>
 
 	<form bindsubmit="formSubmit">
@@ -67,5 +67,5 @@
 		</block>
 	</view> -->
 
-	<view class="showThis {{ __showEnd }}">{{ __theEnd }}</view>
+	<view class="showThis {{ _showEnd }}">{{ _theEnd }}</view>
 </view>

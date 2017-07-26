@@ -41,7 +41,9 @@ Page({
     var storageInfo = wx.getStorageInfoSync(),
         storageInfoLen = storageInfo.keys.length,
         getCSS3 = {},
-        findNumber = 0
+        waitLoad = {},
+        findNumber = 0,
+        total = 0
     wx.showLoading({
       title: "数据加载中"
     })
@@ -50,7 +52,7 @@ Page({
       if( !storageInfo.keys[a].match(/_.*/ig) ){
         if( storageInfo.keys[a].toLowerCase().match(new RegExp(findValue)) || wx.getStorageSync(storageInfo.keys[a]).title.toLowerCase().match(new RegExp(findValue)) || wx.getStorageSync(storageInfo.keys[a]).keywords.toLowerCase().match(new RegExp(findValue)) || wx.getStorageSync(storageInfo.keys[a]).description.toLowerCase().match(new RegExp(findValue)) ) {
 
-          attrList.title = wx.getStorageSync(storageInfo.keys[a]).title
+          attrList.title = (total+1) + "、" + wx.getStorageSync(storageInfo.keys[a]).title
           attrList.keywords = wx.getStorageSync(storageInfo.keys[a]).keywords
           attrList.description = wx.getStorageSync(storageInfo.keys[a]).description
           attrList.usage_perc_a = "部分支持情况：" + wx.getStorageSync(storageInfo.keys[a]).usage_perc_a
@@ -78,24 +80,106 @@ Page({
             }
             browserTypeArray[type] =  {brwoserVerY,brwoserVerA,brwoserVerU,brwoserVerN}
           }
-          attrList.browser = browserTypeArray          
+          attrList.browser = browserTypeArray
+          waitLoad[storageInfo.keys[a]] = attrList
+          total++
 
-          getCSS3[storageInfo.keys[a]] = attrList
-          findNumber++
+          if( findNumber >= 5 ) {
+            if( total - findNumber > 0){
+              this.setData({
+                _showEnd: "showEnd",
+                _theEnd: "上拉加载更多...",
+                _total: total,
+                _pager: 1
+              })
+            }
+          }else{
+            getCSS3[storageInfo.keys[a]] = attrList
+            findNumber++
+            this.setData({
+              _theEnd: "...列表已经全部加载...",
+              _findNumber: findNumber,
+              _total: total
+            })
+          }
 
           this.setData({
-            getCSS3
+            _showEnd: "showEnd",
+            getCSS3,
+            waitLoad
           })
         }
       }
     }
-    wx.hideLoading()
+
+    wx.showToast({
+      title: "有 " + findNumber + " 条数据",
+      duration: 2500,
+      mask: true,
+      image: "/images/find-no.png"
+    })
+
     if(findNumber==0){
       wx.showToast({
         title: "什么东西都找不到",
         duration: 2000,
         mask: true,
         image: "/images/find-no.png"
+      })
+    }
+  },
+
+  onReachBottom: function(){
+    var getCSS3 = this.data.getCSS3,
+        cardNumber = this.data._pager * this.data._findNumber,
+        pager = this.data._pager,
+        loopTimes = (this.data._total - this.data._total % this.data._findNumber)/this.data._findNumber
+
+    console.log("loopTimes:" + loopTimes)
+    console.log("pager:" + pager)
+
+    if(pager <= loopTimes){
+      var temp = 1;
+      for(var c in this.data.waitLoad) {
+        if(temp<=5) {
+          if(this.data.getCSS3[c] != undefined){
+            cardNumber++
+           
+            getCSS3[c] = this.data.getCSS3[c]
+            this.setData({
+              getCSS3
+            })
+          }else{
+            getCSS3[c] = this.data.waitLoad[c]
+            console.log(this.data.waitLoad[c])
+            temp++
+            this.setData({
+              getCSS3
+            })
+          }
+        }else{
+          wx.showToast({
+            title: "新增 " + (temp-1) + " 条数据",
+            duration: 2000,
+            mask: true,
+            image: "/images/find-no.png"
+          })
+          break;
+        }
+      }
+      pager++
+      this.setData({
+        _pager: pager
+      })
+    }else{
+      wx.showToast({
+        title: "共有 " + this.data._total + " 条数据",
+        duration: 2500,
+        mask: true,
+        image: "/images/find-no.png"
+      })
+      this.setData({
+        _theEnd: "...列表已经全部加载..."
       })
     }
   },
@@ -159,7 +243,9 @@ Page({
   beginSearch: function(e) {
     this.setData({
       inputValue: e.detail.value.replace(/(^\s*)|(\s*$)/ig,"").toLowerCase(),
-      getCSS3: ""
+      getCSS3: "",
+      waitLoad: "",
+      _showEnd: ""
     })
     this.showCSS2(this.data.inputValue)
   },
@@ -174,6 +260,11 @@ Page({
         image: "/images/find-no.png"
       })
     }else{
+      this.setData({
+        getCSS3: "",
+        waitLoad: "",
+        _showEnd: ""
+      })
       this.showCSS3(this.data.inputValue)
     }
   },
