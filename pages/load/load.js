@@ -1,11 +1,12 @@
 var app = getApp()
 
 Page({
-  onLoad: function() {    
-    this.requestJson()
+  onLoad: function(e) {
+    wx.showNavigationBarLoading()    
+    this.requestJson(e)
   },
 
-  requestJson: function(res) {
+  requestJson: function(e) {
     wx.showLoading({
       title: "数据请求加载",
       mask: true
@@ -70,9 +71,7 @@ Page({
         var date = new Date(timestamp * 1000);
         var formattedDate = date.getFullYear() + "/" + ('0' + (date.getMonth() + 1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) + " " + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
 
-        // console.log(res.data.data)
         for(var dataLen in res.data.data) {
-          // dataTotal++
           wx.setStorage({
             key: dataLen,
             data: res.data.data[dataLen]
@@ -80,6 +79,7 @@ Page({
         }
 
         wx.setStorageSync("_CSS2",CSS2List)
+        wx.setStorageSync("_ver", "3.0.0")
 
         wx.setStorageSync("_timeStamp", "数据最后更新时间：" + formattedDate) // 在 localstorage 中的继属性列表之后增加时间戳格式
 
@@ -89,16 +89,33 @@ Page({
         })
         wx.hideLoading()
         var storageLen = wx.getStorageInfoSync()
-        // console.log(storageLen)
-        // wx.setStorageSync("_dataTotal", storageLen.keys.length) // 在 localstorage 中的继属性列表之后增加属性列表的总数
-        // console.log(storageLen.keys)
-        // console.log(wx.getStorageSync("_dataTotal"))
-      // }
 
-        wx.reLaunch({
-          url: "/pages/index/index"
-        })
+        // wx.reLaunch({
+        //   url: "/pages/index/index"
+        // })
+        // wx.navigateBack({
+        //   delta: 1
+        // })
+
+        if(e.page == "share") {
+          wx.redirectTo({
+            url:"/pages/share/share?shareTag=" + e.shareTag
+          })
+        }else if(e.page == "index"){
+          wx.switchTab({
+            url:"/pages/index/index"
+          })
+        }
       }
     })
+    // if(e.page == "share") {
+    //   wx.redirectTo({
+    //     url:"/pages/share/share?shareTag=" + e.shareTag
+    //   })
+    // }else if(e.page == "index"){
+    //   wx.redirectTo({
+    //     url:"/pages/index/index"
+    //   })
+    // }
   },
 })

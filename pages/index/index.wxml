@@ -1,12 +1,9 @@
-<!-- <button bindtap="getJson" class="loadDataBtn" style="display: {{_getJsonBtnStatus}}">{{ _getJsonBtnText }}</button>
-<image src="/images/find-no.png" class="findTipsPic" style="display: {{_getJsonBtnStatus}}"></image> -->
-
 <view class="container">
 	<view class="updata_time">{{ _timeStamp }}</view>
 
 	<form bindsubmit="formSubmit">
 		<view class="search_input">
-			<text>Can I use</text> <input type="text" confirm-type="search" placeholder-style="color: #d8d8d8" placeholder="输入属性后按键盘上的搜索" bindinput="beginSearch" focus="{{ inputFocus }}" bindconfirm="bindconfirm" disabled="{{ inputDisabled }}" />
+			<text>Can I use</text> <input type="text" confirm-type="search" placeholder-style="color: #d8d8d8" placeholder="输入属性后按键盘上的搜索" bindinput="beginSearch" focus="{{ inputFocus }}" bindconfirm="bindconfirm" />
 		</view>
 	</form>
 
@@ -21,13 +18,12 @@
 	</block>
 
 	<view class="colorSimple">
-		<text class="pager" wx:if="{{ ___pager > 0 }}">共有：{{ ___pager }}/{{ _listNumber/3 }}</text>
 		<text class="green">支持</text> <text class="yellow">部分支持</text> <text class="red">不支持</text> <text class="unknow">未知</text>
 	</view>
 
 	<view class="caniuse_list">
 		<block wx:for="{{ getCSS3 }}" wx:key="attr_list" wx:for-item="attr_list">
-			<view class="item_box">
+			<view class="item_box" bindtouchstart="touchStart"  bindtouchend="touchEnd" bindtap="longTap" id="{{ index }}">
 				<block wx:for="{{ attr_list }}" wx:key="attr_list" wx:for-item="attr_description">
 					<view wx:if="{{ index == 'title' }}" class="attrTitle">{{ attr_description }}</view>
 					<view wx:if="{{ index == 'description' }}" class="attrDescription">{{ attr_description }}</view>
@@ -45,27 +41,6 @@
 			</view>
 		</block>
 	</view>
-
-	<!-- <view class="caniuse_list">
-		<block wx:for="{{ _____lastList }}" wx:key="browserInfo">
-			<view class="item_box" bindtouchstart="touchStart"  bindtouchend="touchEnd" bindtap="longTap" id="tag_{{index}}">
-				<block wx:if="{{ index%3 == 1 }}">
-					<view wx:for="{{ item }}" wx:key="detail" class="attrInfo">{{ item }}</view>
-				</block>
-				<block wx:if="{{ ((index)%3) == 2 }}">
-					<block wx:for="{{ item }}" wx:key="type">
-						<view class="verList">
-							<view wx:for="{{ item }}" wx:key="version" class="version">
-								<block wx:if="{{ item != 0 }}">
-									{{ item }}
-								</block>
-							</view>
-						</view>
-					</block>
-				</block>
-			</view>
-		</block>
-	</view> -->
 
 	<view class="showThis {{ _showEnd }}">{{ _theEnd }}</view>
 </view>
