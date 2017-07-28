@@ -2,7 +2,7 @@ var app = getApp()
 
 Page({
   onLoad: function(e) {
-    wx.showNavigationBarLoading()    
+    wx.showNavigationBarLoading()
     this.requestJson(e)
   },
 
