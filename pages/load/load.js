@@ -90,13 +90,6 @@ Page({
         wx.hideLoading()
         var storageLen = wx.getStorageInfoSync()
 
-        // wx.reLaunch({
-        //   url: "/pages/index/index"
-        // })
-        // wx.navigateBack({
-        //   delta: 1
-        // })
-
         if(e.page == "share") {
           wx.redirectTo({
             url:"/pages/share/share?shareTag=" + e.shareTag
@@ -104,6 +97,10 @@ Page({
         }else if(e.page == "index"){
           wx.switchTab({
             url:"/pages/index/index"
+          })
+        }else if(e.page == "about"){
+          wx.switchTab({
+            url:"/pages/about/about"
           })
         }
       }

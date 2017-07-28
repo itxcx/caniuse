@@ -189,15 +189,17 @@ Page({
         _pager: pager
       })
     }else{
-      wx.showToast({
-        title: "共有 " + this.data._total + " 条数据",
-        duration: 2500,
-        mask: true,
-        image: "/images/find-no.png"
-      })
-      this.setData({
-        _theEnd: "..." + this.data._total + " 条数据已经全部加载..."
-      })
+      if(this.data._total != undefined){
+        wx.showToast({
+          title: "共有 " + this.data._total + " 条数据",
+          duration: 2500,
+          mask: true,
+          image: "/images/find-no.png"
+        })
+        this.setData({
+          _theEnd: "..." + this.data._total + " 条数据已经全部加载..."
+        })
+      }
     }
   },
 

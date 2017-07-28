@@ -26,6 +26,8 @@ page {
 	line-height: 1.5;
 	font-size: 32rpx;
 	color: #CFB78B;
+	word-break: break-all;
+	word-wrap:break-word;
 }
 .intro text text {
 	display: inline;

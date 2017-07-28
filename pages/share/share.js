@@ -18,7 +18,7 @@ Page({
           mask: true,
           image: "/images/find-no.png"
         })
-        wx.redirectTo({
+        wx.switchTab({
           url:"/pages/index/index"
         })
       }else{
@@ -30,7 +30,42 @@ Page({
     }
   },
 
-   onShareAppMessage: function (res) {
+  touchStart: function(e) {
+    this.setData({
+      _touchStart: e.timeStamp
+    })
+  },
+
+  touchEnd: function(e) {
+    this.setData({
+      _touchEnd: e.timeStamp
+    })
+  },
+
+  longTap: function(e) {
+    var touchTime = this.data._touchEnd - this.data._touchStart
+
+    if(touchTime > 300){
+      wx.setClipboardData({
+        data: '/pages/share/share?shareTag=' + this.data.inputValue,
+        success: function(res) {
+          wx.getClipboardData({
+            success: function(res) {
+              console.log(res.data)
+              wx.showToast({
+                title: "已经将该页面路径复制到剪贴板",
+                duration: 2000,
+                mask: true,
+                image: "/images/find-no.png"
+              })
+            }
+          })
+        }
+      })
+    }
+  },
+
+  onShareAppMessage: function (res) {
     return {
       title: tipsTitle + ' 兼容信息分享',
       path: '/pages/share/share?shareTag=' + this.data.inputValue,
