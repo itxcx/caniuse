@@ -64,7 +64,6 @@ Page({
           'visibility (visible | hidden)',
           'z-index'
         ]
-        // dataTotal = 0
 
         // json 数据包的更新时间转换格式
         var timestamp = res.data.updated;
@@ -105,14 +104,5 @@ Page({
         }
       }
     })
-    // if(e.page == "share") {
-    //   wx.redirectTo({
-    //     url:"/pages/share/share?shareTag=" + e.shareTag
-    //   })
-    // }else if(e.page == "index"){
-    //   wx.redirectTo({
-    //     url:"/pages/index/index"
-    //   })
-    // }
   },
 })
