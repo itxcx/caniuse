@@ -96,28 +96,6 @@
 	-webkit-animation: ball3 6s 1s ease-in infinite;
 	        animation: ball3 6s 1s ease-in infinite;
 }
-
-/*@-webkit-keyframes maskShow {
-	0% {
-		-webkit-mask: url(background: linear-gradient(to right, rgba(255,255,255,0) 0%,rgba(255,255,255,0) 100%));
-		-webkit-mask-position: 50% 70%;
-	}
-	80%,100%  {
-		-webkit-mask: url(http://lab.tianyizone.com/mask-pic.png) center no-repeat;
-		-webkit-mask-position: 50% 70%;
-	}
-}
-
-@keyframes maskShow {
-	0% {
-		-webkit-mask: url(background: linear-gradient(to right, rgba(255,255,255,0) 0%,rgba(255,255,255,0) 100%));
-		-webkit-mask-position: 50% 70%;
-	}
-	80%,100%  {
-		-webkit-mask: url(http://lab.tianyizone.com/mask-pic.png) center no-repeat;
-		-webkit-mask-position: 50% 70%;
-	}
-}*/
 @-webkit-keyframes arc1 {
 	0% {
 		opacity: 0;
