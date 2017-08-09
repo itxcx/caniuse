@@ -1,8 +1,8 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/share/share",
     "pages/about/about",
+    "pages/share/share",
     "pages/load/load"
   ],
   "window":{

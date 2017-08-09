@@ -3,9 +3,10 @@ var app = getApp(),
 
 Page({
   onLoad: function(res){
+    console.log(res)
     if(wx.getStorageSync("_timeStamp") == "" || wx.getStorageSync("_ver") == "") {
       wx.redirectTo({
-        url:"/pages/load/load?page=share&shareTag=" + shareTag
+        url:"/pages/load/load?page=share&shareTag=" + res.shareTag
       })
     }else{
       this.setData({
@@ -14,7 +15,7 @@ Page({
       if(res.shareTag == undefined) {
         wx.showToast({
           title: "错误的分享页面",
-          duration: 2000,
+          duration: 3000,
           mask: true,
           image: "/images/find-no.png"
         })
@@ -72,7 +73,7 @@ Page({
       success: function(res) {
         wx.showToast({
           title: "已成功分享给好友！ ^o^",
-          duration: 2000,
+          duration: 1500,
           mask: true,
           image: "/images/find-no.png"
         })
@@ -80,7 +81,7 @@ Page({
       fail: function(res) {
         wx.showToast({
           title: "分享失败！ >_< ",
-          duration: 2000,
+          duration: 1500,
           mask: true,
           image: "/images/find-no.png"
         })
@@ -151,7 +152,7 @@ Page({
 
     wx.showToast({
       title: "可将该页面转发给好友",
-      duration: 2500,
+      duration: 1500,
       mask: true,
       image: "/images/find-no.png"
     })
