@@ -131,7 +131,7 @@ Page({
     wx.showToast({
       title: "有 " + findNumber + " 条数据",
       duration: 2500,
-      mask: true,
+      mask: false,
       image: "/images/find-no.png"
     })
 
@@ -139,7 +139,7 @@ Page({
       wx.showToast({
         title: "什么东西都找不到",
         duration: 2000,
-        mask: true,
+        mask: false,
         image: "/images/find-no.png"
       })
     }
@@ -178,7 +178,7 @@ Page({
           wx.showToast({
             title: "新增 " + (temp-1) + " 条数据",
             duration: 2000,
-            mask: true,
+            mask: false,
             image: "/images/find-no.png"
           })
           break;
@@ -193,7 +193,7 @@ Page({
         wx.showToast({
           title: "共有 " + this.data._total + " 条数据",
           duration: 2500,
-          mask: true,
+          mask: false,
           image: "/images/find-no.png"
         })
         this.setData({
@@ -233,7 +233,7 @@ Page({
           }else if(res.cancel) {
             wx.showToast({
               title: "那就重新选择一个吧！^o^",
-              mask: true,
+              mask: false,
               duration: 1000,
               image: "/images/find-no.png"
             })
@@ -259,7 +259,7 @@ Page({
       wx.showToast({
         title: "你确认输入东西？",
         duration: 2000,
-        mask: true,
+        mask: false,
         image: "/images/find-no.png"
       })
     }else{
